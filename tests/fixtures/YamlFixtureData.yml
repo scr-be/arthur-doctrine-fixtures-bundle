@@ -1,0 +1,111 @@
+---
+Role:
+
+    version:
+
+        structure: 1.0.0
+        data:      1.0.0
+
+    orm:
+
+        priority:   200
+        cannibal:   true
+        mode:       truncate
+        entity:     s.security.role.entity.class
+        repository: s.security.role.repo
+
+    dependencies:
+
+        Role:
+            entity:     s.security.role.entity.class
+            repository: s.security.role.repo
+
+    data:
+
+        1:
+            name:        'ROLE_ROOT'
+            description: 'Highest available role with all privileges.'
+            parents:     null
+
+        2:
+            name:        'ROLE_ALLOWED_TO_SWITCH'
+            description: 'Allowed to switch between users.'
+            parents:
+                - '@Role?name=ROLE_ROOT'
+
+        3:
+            name:        'ROLE_SECURITY_ADMIN'
+            description: 'Administration of the security bundle.'
+            parents:
+                - '@Role?name=ROLE_ROOT'
+
+        4:
+            name:        'ROLE_STATUS_ADMIN'
+            description: 'Administration of the status bundle.'
+            parents:
+                - '@Role?name=ROLE_ROOT'
+
+        5:
+            name:        'ROLE_BLOG_ADMIN'
+            description: 'Administration of the blog bundle.'
+            parents:
+                - '@Role?name=ROLE_ROOT'
+
+        6:
+            name:        'ROLE_EEP_ADMIN'
+            description: 'Administration of the EEP bundle.'
+            parents:
+                - '@Role?name=ROLE_ROOT'
+
+        7:
+            name:        'ROLE_HUB_ADMIN'
+            description: 'Administration of the hub bundle.'
+            parents:
+                - '@Role?name=ROLE_ROOT'
+
+        8:
+            name:        'ROLE_SECURITY_USER'
+            description: 'Usage of the security bundle (not enforced).'
+            parents:
+                - '@Role?name=ROLE_SECURITY_ADMIN'
+
+        9:
+            name:        'ROLE_STATUS_USER'
+            description: 'Usage of the status bundle (not enforced).'
+            parents:
+                - '@Role?name=ROLE_STATUS_ADMIN'
+
+        10:
+            name:        'ROLE_BLOG_USER'
+            description: 'Usage of the blog bundle (not enforced).'
+            parents:
+                - '@Role?name=ROLE_BLOG_ADMIN'
+
+        11:
+            name:        'ROLE_EEP_USER'
+            description: 'Usage of the EEP bundle (not enforced).'
+            parents:
+                - '@Role?name=ROLE_EEP_ADMIN'
+
+        12:
+            name:        'ROLE_HUB_USER'
+            description: 'Usage of the hub bundle.'
+            parents:
+                - '@Role?name=ROLE_HUB_ADMIN'
+
+        13:
+            name:        'ROLE_FILE_USER'
+            description: 'Usage of the file manager bundle.'
+            parents:
+                - '@Role?name=ROLE_ROOT'
+
+        14:
+            name:        'ROLE_USER'
+            description: 'Base user role (required to login).'
+            parents:
+                - '@Role?name=ROLE_SECURITY_USER'
+                - '@Role?name=ROLE_STATUS_USER'
+                - '@Role?name=ROLE_BLOG_USER'
+                - '@Role?name=ROLE_EEP_USER'
+                - '@Role?name=ROLE_HUB_USER'
+                - '@Role?name=ROLE_FILE_USER'
