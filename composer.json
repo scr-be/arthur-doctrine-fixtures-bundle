@@ -26,26 +26,22 @@
         "scr-be/wonka-library"              : "~0.1",
         "scr-be/arthur-doctrine-library"    : "~0.1",
         "scr-be/augustus-primitive-library" : "~0.1",
-        "hoa/math"                          : "~0.1",
+        "symfony/dependency-injection"      : "~2.8|~3.0",
+        "symfony/config"                    : "~2.8|~3.0",
+        "symfony/yaml"                      : "~2.8|~3.0",
         "doctrine/common"                   : "~2.5",
         "doctrine/orm"                      : "~2.5",
         "doctrine/data-fixtures"            : "~1.1",
         "doctrine/doctrine-bundle"          : "~1.6",
-        "symfony/dependency-injection"      : "~2.8|~3.0",
-        "symfony/config"                    : "~2.8|~3.0"
+        "hoa/math"                          : "~0.1"
     },
     "require-dev" : {
-        "symfony/yaml"                : "~2.8|~3.0",
-        "phpunit/phpunit"             : "~5.0",
-        "sensiolabs/security-checker" : "~3.0",
-        "scrutinizer/ocular"          : "~1.1",
-        "satooshi/php-coveralls"      : "~0.7"
+        "phpunit/phpunit"        : "~5.0",
+        "codacy/coverage"        : "~1.0",
+        "satooshi/php-coveralls" : "~0.7"
     },
     "conflict" : {
         "scribe/mantle-bundle" : "<2.2.0"
-    },
-    "suggest" : {
-        "symfony/yaml" : "~2.8|~3.0"
     },
     "autoload" : {
         "psr-4" : {

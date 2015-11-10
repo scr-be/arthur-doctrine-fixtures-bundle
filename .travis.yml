@@ -27,8 +27,7 @@ script:
     - bin/phpunit --verbose --configuration phpunit.xml.dist
 
 after_script:
-    - if [[ ${TRAVIS_PHP_VERSION:0:1} != "7" ]]; then bin/coveralls -vvv; fi
-    - if [[ ${TRAVIS_PHP_VERSION:0:1} != "7" ]]; then bin/ocular code-coverage:upload --format=php-clover build/logs/clover.xml; fi
+    - if [[ ${TRAVIS_PHP_VERSION:0:1} != "7" ]]; then bin/coveralls; bin/codacycoverage clover -n build/logs/clover.xml; fi
 
 notifications:
     webhooks:
