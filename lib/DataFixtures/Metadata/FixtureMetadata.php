@@ -266,7 +266,7 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function getTreeStore()
     {
-        return TreeStore::create($this->data, $this->name);
+        return TreeStore::create((array)$this->data, (string)$this->name);
     }
 
     /**
