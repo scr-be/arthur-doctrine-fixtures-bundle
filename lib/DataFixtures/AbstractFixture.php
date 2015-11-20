@@ -76,7 +76,8 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
      * @var array[]
      */
     protected $fixtureSearchPathParts = [
-        ['../../../app', 'app', ''],
+        ['../', '../../', '../../../'],
+        ['./', 'app'],
         ['config'],
         ['shared_public/fixtures', 'shared_proprietary/fixtures'],
     ];
@@ -118,7 +119,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     public function getFixtureFileSearchPaths()
     {
         return FixturePaths::create()->cartesianProductFromPaths(
-            $this->container->getParameter('kernel.root_dir'),
+            [$this->container->getParameter('kernel.root_dir')],
             ...$this->fixtureSearchPathParts
         );
     }
@@ -167,6 +168,8 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
                 ->setLocator($locator)
                 ->setLoader($loader)
                 ->load();
+
+            $this->metadata = $metadata;
 
         } catch (\Exception $exception) {
             throw new RuntimeException('Unable to generate metadata for fixture (ORM Loader: %s)', null, $exception, get_class($this));

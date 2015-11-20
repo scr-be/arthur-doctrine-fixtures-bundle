@@ -41,6 +41,7 @@ class YamlFixtureLoader extends AbstractFixtureLoader
     public function load($resource, $type = null)
     {
         try {
+            echo "Reading in $resource...".PHP_EOL;
             $contents = $this->loadFileContents($resource);
             $decoded = $this->loadUsingSymfonyYaml($contents);
 
