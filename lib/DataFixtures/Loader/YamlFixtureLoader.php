@@ -11,6 +11,8 @@
 
 namespace Scribe\Doctrine\DataFixtures\Loader;
 
+use Scribe\Wonka\Console\ConsoleStringColorSwatches;
+use Scribe\Wonka\Console\OutBuffer;
 use Scribe\Wonka\Exception\RuntimeException;
 use Symfony\Component\Yaml\Yaml;
 
@@ -41,9 +43,16 @@ class YamlFixtureLoader extends AbstractFixtureLoader
     public function load($resource, $type = null)
     {
         try {
-            echo "Reading in $resource...".PHP_EOL;
+
+            OutBuffer::conf([OutBuffer::CFG_PRE => '  '.ConsoleStringColorSwatches::$colors['+y/-'].'> '.ConsoleStringColorSwatches::$colors['+R/-']]);
+            OutBuffer::line('+p/i-pre-load+p/b- [resolve]+w/i- %s');
+            OutBuffer::show($resource);
+
+            OutBuffer::stat('+p/i-resolver+p/b- [reading]+w/- loading file content into memory=+w/-[ +w/i-'.(filesize($resource)).' bytes +w/-]');
             $contents = $this->loadFileContents($resource);
+            OutBuffer::stat('+p/i-resolver+p/b- [parsing]+w/- loading yaml config and preparing fixture data');
             $decoded = $this->loadUsingSymfonyYaml($contents);
+            echo PHP_EOL;
 
         } catch (\Exception $exception) {
             throw new RuntimeException('Could not decode YAML for %s.', null, $exception, $resource);

@@ -21,6 +21,31 @@ use Scribe\Doctrine\DataFixtures\Locator\FixtureLocatorInterface;
 interface FixtureMetadataInterface
 {
     /**
+     * @var string
+     */
+    const MODE_SKIP = 'skip';
+
+    /**
+     * @var string
+     */
+    const MODE_BLIND = 'blind';
+
+    /**
+     * @var string
+     */
+    const MODE_PURGE = 'purge';
+
+    /**
+     * @var string
+     */
+    const MODE_MERGE = 'merge';
+
+    /**
+     * @var string
+     */
+    const MODE_DEFAULT = self::MODE_MERGE;
+
+    /**
      * @return $this
      */
     public function load();
@@ -64,6 +89,11 @@ interface FixtureMetadataInterface
      * @return string
      */
     public function getName();
+
+    /**
+     * @return string
+     */
+    public function getMode();
 
     /**
      * @return int

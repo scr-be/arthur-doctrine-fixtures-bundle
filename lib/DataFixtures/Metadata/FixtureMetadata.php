@@ -170,6 +170,14 @@ class FixtureMetadata implements FixtureMetadataInterface
     }
 
     /**
+     * @return string
+     */
+    public function getMode()
+    {
+        return (string) ($this->tree->get('orm', 'mode'));
+    }
+
+    /**
      * @return int
      */
     public function getPriority()
