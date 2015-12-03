@@ -39,7 +39,8 @@
     "require-dev" : {
         "phpunit/phpunit"        : "~5.0",
         "codacy/coverage"        : "~1.0",
-        "satooshi/php-coveralls" : "~0.7"
+        "satooshi/php-coveralls" : "~0.7",
+        "symfony/config"         : "~2.8"
     },
     "conflict" : {
         "scribe/mantle-bundle" : "<2.2.0"
