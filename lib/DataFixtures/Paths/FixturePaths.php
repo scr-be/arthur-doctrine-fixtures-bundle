@@ -19,7 +19,7 @@ use Hoa\Math\Combinatorics\Combination\CartesianProduct;
 class FixturePaths extends AbstractFixturePaths
 {
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @param string,... $paths
      *
@@ -33,7 +33,7 @@ class FixturePaths extends AbstractFixturePaths
     }
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @return string[]
      */
@@ -43,7 +43,7 @@ class FixturePaths extends AbstractFixturePaths
     }
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @return bool
      */
@@ -53,7 +53,7 @@ class FixturePaths extends AbstractFixturePaths
     }
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @return FixturePathsInterface
      */
@@ -61,7 +61,7 @@ class FixturePaths extends AbstractFixturePaths
     {
         $result = self::create(...$this->getPaths());
 
-        $result->map(function($p) {
+        $result->map(function ($p) {
             return (string) (substr($p, 0, 1) === DIRECTORY_SEPARATOR ? substr($p, 1) : $p);
         });
 
@@ -69,7 +69,7 @@ class FixturePaths extends AbstractFixturePaths
     }
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @param FixturePathsInterface      $upperDirs
      * @param FixturePathsInterface|null $rootDirs
@@ -79,7 +79,7 @@ class FixturePaths extends AbstractFixturePaths
     public function cartesianProduct(FixturePathsInterface $upperDirs, FixturePathsInterface $rootDirs = null)
     {
         $rootDirs = $rootDirs ?: $this;
-        $product  = new CartesianProduct($rootDirs, $upperDirs);
+        $product = new CartesianProduct($rootDirs, $upperDirs);
         $filtered = self::create();
 
         foreach ($product as $path) {
@@ -90,7 +90,7 @@ class FixturePaths extends AbstractFixturePaths
     }
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @param array[] $pathParts
      *
@@ -112,7 +112,7 @@ class FixturePaths extends AbstractFixturePaths
         $return = '';
 
         foreach ($paths as $p) {
-            $return .= empty($return) ? $p : DIRECTORY_SEPARATOR . $p;
+            $return .= empty($return) ? $p : DIRECTORY_SEPARATOR.$p;
         }
 
         return preg_replace('{[/]{2,}}', DIRECTORY_SEPARATOR, $return);

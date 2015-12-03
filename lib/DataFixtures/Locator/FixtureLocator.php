@@ -24,7 +24,7 @@ class FixtureLocator implements FixtureLocatorInterface
     protected $search;
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @param FixturePaths $search
      *
@@ -38,7 +38,7 @@ class FixtureLocator implements FixtureLocatorInterface
     }
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @param string    $file
      * @param true|bool $single
@@ -47,7 +47,9 @@ class FixtureLocator implements FixtureLocatorInterface
      */
     public function locate($file, $single = true)
     {
-        if (true !== ($this->search instanceof FixturePaths)) { return []; }
+        if (true !== ($this->search instanceof FixturePaths)) {
+            return [];
+        }
 
         $paths = $this
             ->locateValidPaths($file)
@@ -57,7 +59,7 @@ class FixtureLocator implements FixtureLocatorInterface
     }
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @param FixturePaths $search
      * @param null|string  $file
@@ -67,9 +69,9 @@ class FixtureLocator implements FixtureLocatorInterface
     public function locateValidPaths($file = null, FixturePaths $search = null)
     {
         $search = $search ?: $this->search;
-        
+
         $search->filter(function (&$p) use ($file) {
-            if (false !== ($realPath = realpath($p . DIRECTORY_SEPARATOR . ($file ?: '')))) {
+            if (false !== ($realPath = realpath($p.DIRECTORY_SEPARATOR.($file ?: '')))) {
                 $p = $realPath;
             }
 

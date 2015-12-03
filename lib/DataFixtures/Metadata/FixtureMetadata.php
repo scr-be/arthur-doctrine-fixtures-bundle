@@ -88,15 +88,15 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function load()
     {
-        $this->className    = $this->getHandlerClassName($this->handler);
-        $this->type         = $this->handler->getType();
+        $this->className = $this->getHandlerClassName($this->handler);
+        $this->type = $this->handler->getType();
         $this->nameTemplate = $this->resolveFileNameTemplate();
-        $this->nameRegex    = $this->resolveNameRegex();
-        $this->name         = $this->resolveName();
-        $this->fileName     = $this->resolveFileName();
-        $this->filePath     = $this->resolveLocation();
-        $this->data         = $this->resolveContents();
-        $this->tree         = $this->getTreeStore();
+        $this->nameRegex = $this->resolveNameRegex();
+        $this->name = $this->resolveName();
+        $this->fileName = $this->resolveFileName();
+        $this->filePath = $this->resolveLocation();
+        $this->data = $this->resolveContents();
+        $this->tree = $this->getTreeStore();
 
         return $this;
     }
@@ -256,11 +256,11 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function getReferenceByColumnsSets()
     {
-        $prepareColumnSets = function(&$set) { $set = (array) $set; };
+        $prepareColumnSets = function (&$set) { $set = (array) $set; };
 
         if (null !== ($columnSets = $this->tree->get('references', 'columns'))) {
             array_walk($columnSets, $prepareColumnSets);
-        } else if (null !== ($columnSets = $this->tree->get('references', 'usingColumns'))) {
+        } elseif (null !== ($columnSets = $this->tree->get('references', 'usingColumns'))) {
             array_walk($columnSets, $prepareColumnSets);
         }
 
@@ -274,7 +274,7 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function getTreeStore()
     {
-        return TreeStore::create((array)$this->data, (string)$this->name);
+        return TreeStore::create((array) $this->data, (string) $this->name);
     }
 
     /**

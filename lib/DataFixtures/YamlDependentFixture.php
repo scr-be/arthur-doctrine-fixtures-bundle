@@ -12,7 +12,6 @@
 namespace Scribe\Doctrine\DataFixtures;
 
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
-use Scribe\Wonka\Console\OutBuffer;
 use Scribe\Wonka\Utility\ClassInfo;
 
 /**

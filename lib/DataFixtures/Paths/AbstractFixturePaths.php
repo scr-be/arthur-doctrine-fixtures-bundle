@@ -12,7 +12,6 @@
 namespace Scribe\Doctrine\DataFixtures\Paths;
 
 use Scribe\Primitive\Collection\AbstractCollection;
-use Scribe\Wonka\Exception\LogicException;
 
 /**
  * Class AbstractFixturePaths.
@@ -36,19 +35,19 @@ abstract class AbstractFixturePaths extends AbstractCollection implements Fixtur
      */
     public static function create(...$paths)
     {
-        $instance = new static;
+        $instance = new static();
 
         return $instance->addPaths(...$paths);
     }
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @param string,... $paths
      *
      * @return $this
      */
-    public abstract function addPaths(...$paths);
+    abstract public function addPaths(...$paths);
 }
 
 /* EOF */

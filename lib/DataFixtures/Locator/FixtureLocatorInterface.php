@@ -28,7 +28,7 @@ interface FixtureLocatorInterface
     public function setPaths(FixturePaths $search);
 
     /**
-     * Locate valid file paths out of provides paths/file names
+     * Locate valid file paths out of provides paths/file names.
      *
      * @param string    $file
      * @param true|bool $single
@@ -38,7 +38,7 @@ interface FixtureLocatorInterface
     public function locate($file, $single = true);
 
     /**
-     * Filter invalid paths out of provides paths
+     * Filter invalid paths out of provides paths.
      *
      * @param FixturePaths $search
      * @param null|string  $file

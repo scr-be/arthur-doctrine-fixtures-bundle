@@ -30,7 +30,7 @@ class FixturesLocatorTest extends WonkaTestCase
             4 => 'four.2',
             5 => 'five.2',
             6 => 'six',
-            7 => 'seven'
+            7 => 'seven',
         ];
 
         $locator = new FixtureLocator();
@@ -47,13 +47,13 @@ class FixturesLocatorTest extends WonkaTestCase
             'bin',
             'lib',
             'invalid-path',
-            'tests/DataFixtures/Locator'
+            'tests/DataFixtures/Locator',
         ];
 
         $expected = [
             'bin',
             'lib',
-            'tests/DataFixtures/Locator'
+            'tests/DataFixtures/Locator',
         ];
 
         $locator = new FixtureLocator($input);
@@ -64,7 +64,7 @@ class FixturesLocatorTest extends WonkaTestCase
         $resultingPaths = $locator->locateValidPaths(null, FixturePaths::create(...$input));
 
         foreach ($resultingPaths as $i => $p) {
-            static::assertEquals($expected[$i], substr($p, strlen($p)-strlen($expected[$i])));
+            static::assertEquals($expected[$i], substr($p, strlen($p) - strlen($expected[$i])));
         }
     }
 }

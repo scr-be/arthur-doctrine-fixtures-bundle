@@ -43,7 +43,6 @@ class YamlFixtureLoader extends AbstractFixtureLoader
     public function load($resource, $type = null)
     {
         try {
-
             OutBuffer::conf([OutBuffer::CFG_PRE => '  '.ConsoleStringColorSwatches::$colors['+y/-'].'> '.ConsoleStringColorSwatches::$colors['+R/-']]);
             OutBuffer::line('+p/i-pre-load+p/b- [resolve]+w/i- %s');
             OutBuffer::show($resource);
@@ -53,7 +52,6 @@ class YamlFixtureLoader extends AbstractFixtureLoader
             OutBuffer::stat('+p/i-resolver+p/b- [parsing]+w/- loading yaml config and preparing fixture data');
             $decoded = $this->loadUsingSymfonyYaml($contents);
             echo PHP_EOL;
-
         } catch (\Exception $exception) {
             throw new RuntimeException('Could not decode YAML for %s.', null, $exception, $resource);
         }

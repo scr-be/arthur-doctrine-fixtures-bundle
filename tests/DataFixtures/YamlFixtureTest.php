@@ -13,7 +13,6 @@ namespace Scribe\Doctrine\Tests\DataFixtures\Locator;
 
 use Scribe\Doctrine\DataFixtures\Loader\FixtureLoaderInterface;
 use Scribe\Doctrine\DataFixtures\Paths\FixturePaths;
-use Scribe\Wonka\Utility\ClassInfo;
 use Scribe\Wonka\Utility\UnitTest\WonkaTestCase;
 use Scribe\Doctrine\DataFixtures\YamlFixture;
 use Symfony\Component\DependencyInjection\ContainerInterface;

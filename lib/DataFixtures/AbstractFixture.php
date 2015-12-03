@@ -28,7 +28,6 @@ use Scribe\Wonka\Component\Hydrator\Manager\HydratorManager;
 use Scribe\Wonka\Component\Hydrator\Mapping\HydratorMapping;
 use Scribe\Wonka\Console\OutBuffer;
 use Scribe\Wonka\Exception\RuntimeException;
-use Scribe\Wonka\Tests\Component\Hydrator\Manager\HydratorManagerTest;
 use Scribe\Wonka\Utility\Reflection\ClassReflectionAnalyser;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Finder\Finder;
@@ -95,18 +94,18 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         ['app'],
         ['config'],
         ['shared_public', 'shared_proprietary'],
-        ['fixtures']
+        ['fixtures'],
     ];
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @return string
      */
     abstract public function getType();
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @param ContainerInterface $container
      */
@@ -118,7 +117,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     }
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @param string $regex
      */
@@ -128,7 +127,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     }
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @return Paths\FixturePaths
      */
@@ -141,7 +140,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     }
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @param array[] ...$paths
      */
@@ -151,17 +150,17 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     }
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @return Loader\FixtureLoaderInterface[]
      */
     public function getFixtureFileLoaders()
     {
-        return [ new YamlFixtureLoader() ];
+        return [new YamlFixtureLoader()];
     }
 
     /**
-     * {@inherit-doc}
+     * {@inherit-doc}.
      *
      * @throws RuntimeException
      *
@@ -186,7 +185,6 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
                 ->load();
 
             $this->metadata = $metadata;
-
         } catch (\Exception $exception) {
             throw new RuntimeException('Unable to generate metadata for fixture (ORM Loader: %s)', null, $exception, get_class($this));
         }
@@ -204,12 +202,13 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         $this->objectManager = $manager;
 
         if ($this->metadata->isEmpty()) {
-            OutBuffer::stat('+y/i-runmode +y/b-[ended]+w/- empty data set provided in fixture'); echo PHP_EOL;
+            OutBuffer::stat('+y/i-runmode +y/b-[ended]+w/- empty data set provided in fixture');
+            echo PHP_EOL;
 
             return;
         }
 
-        $shortDepNameList = function($fullyQualifiedDependencies) {
+        $shortDepNameList = function ($fullyQualifiedDependencies) {
             $dependencyList = [];
 
             foreach ($fullyQualifiedDependencies as $d) {
@@ -243,6 +242,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
 
         if ($runtimeMode === FixtureMetadata::MODE_SKIP) {
             OutBuffer::stat('+y/i-runmode +y/b-[warns]+w/- skipping import=[ %s ]', $this->resolveEntityFqcn());
+
             return;
         }
 
@@ -250,6 +250,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
 
         if ($runtimeMode === FixtureMetadata::MODE_SKIP) {
             OutBuffer::stat('+y/i-runmode +y/b-[warns]+w/- skipping import=[ %s ]', $this->resolveEntityFqcn());
+
             return;
         }
 
@@ -258,7 +259,6 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         $this->entityManagerFlushAndClean();
 
         foreach ($dataFixtures as $index => $data) {
-
             $this->entityPopulateNewObj($index, $data, $entity);
 
             if ($runtimeMode === FixtureMetadata::MODE_PURGE || $runtimeMode === FixtureMetadata::MODE_BLIND) {
@@ -361,8 +361,8 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
 
     /**
      * @param ClassMetadataInfo $meta
-     * @param EntityRepository $repo
-     * @param EntityManager $em
+     * @param EntityRepository  $repo
+     * @param EntityManager     $em
      */
     protected function performModePurgePreLoad(ClassMetadataInfo $meta, EntityRepository $repo, EntityManager $em, &$purgeCount)
     {
@@ -372,7 +372,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
 
         foreach ($deletions as $d) {
             $em->remove($d);
-            $purgeCount++;
+            ++$purgeCount;
         }
 
         $em->flush();
@@ -398,7 +398,6 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             $identityField = $entityMeta->getSingleIdentifierFieldName();
 
             return [$entityMeta, $identityField, $identityNatural];
-
         } catch (\Exception $e) {
             throw new \RuntimeException('Could not get entity metadata/identity information.');
         }
@@ -411,8 +410,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     {
         if (!$this->entityNamespace &&
             false === $this->resolveEntityFqnsFast() &&
-            false === $this->resolveEntityFqnsSlow())
-        {
+            false === $this->resolveEntityFqnsSlow()) {
             throw new RuntimeException('Could not resolve namespace for entity associated with '.$this->metadata->getName());
         }
 
@@ -520,7 +518,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     {
         try {
             $this->objectManager->persist($entity);
-            $countInsert++;
+            ++$countInsert;
         } catch (\Exception $e) {
             throw $e;
         }
@@ -563,21 +561,17 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             $this->objectManager->initializeObject($entitySearched);
 
             if ($entitySearched && !$entity->isEqualTo($entitySearched)) {
-
                 $mapper = new HydratorManager(new HydratorMapping(true));
                 $entity = $mapper->getMappedObject($entity, $entitySearched);
-                $countUpdate++;
-
-            } else if ($entitySearched && $entity->isEqualTo($entitySearched)) {
-
+                ++$countUpdate;
+            } elseif ($entitySearched && $entity->isEqualTo($entitySearched)) {
                 $entity = $entitySearched;
-                $countSkip++;
+                ++$countSkip;
 
                 return $this;
             }
 
             $this->entityLoadAndPersist($entity, $countNotTracked);
-
         } catch (\Exception $e) {
             throw $e;
         }
@@ -613,13 +607,13 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         }
 
         if ($this->metadata->hasReferenceByColumnsEnabled()) {
-
-            $referenceByColumnsSetConcat = function($columns) use ($data) {
+            $referenceByColumnsSetConcat = function ($columns) use ($data) {
                 array_walk($columns, function (&$c) use ($data) { $c = $data[$c]; });
+
                 return implode(':', (array) $columns);
             };
 
-            $referenceByColumnsSetRegister = function($columns) use ($entity, $referenceByColumnsSetConcat) {
+            $referenceByColumnsSetRegister = function ($columns) use ($entity, $referenceByColumnsSetConcat) {
                 $this->addReference($this->metadata->getName().':'.$referenceByColumnsSetConcat($columns), $entity);
             };
 
@@ -638,10 +632,8 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     protected function getNewPopulatedEntity($index, $values)
     {
         try {
-
             $entityClassName = $this->container->getParameter($this->metadata->getServiceKey());
             $entity = new $entityClassName();
-
         } catch (\Exception $exception) {
             throw new RuntimeException('Unable to locate service id %s.', null, $exception, $this->metadata->getServiceKey());
         }
@@ -668,7 +660,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
 
             try {
                 $entity = $this->hydrateEntityData($entity, $property, $methodCall, $methodData);
-            } catch(\Exception $exception) {
+            } catch (\Exception $exception) {
                 $entity = $this->hydrateEntityData($entity, $property, $methodCall, new ArrayCollection((array) $methodData));
             }
         }
@@ -687,13 +679,11 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     protected function hydrateEntityData(Entity $entity, $property, $methodCall, $methodData)
     {
         try {
-
             $reflectProp = (new ClassReflectionAnalyser(new \ReflectionClass($entity)))
                 ->setPropertyPublic($property);
             $reflectProp->setValue($entity, $methodData);
 
             return $entity;
-
         } catch (\Exception $exception) {
             throw new RuntimeException('Could not assign property "%s" via property, setter or reflection in fixture %s.', null, $exception, $property, $this->metadata->getName());
         }
@@ -746,17 +736,11 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     protected function getHydrationValue($value)
     {
         if (substr($value, 0, 2) === '++') {
-
             $value = $this->getHydrationValueUsingInternalRefLookup(substr($value, 2)) ?: $value;
-
         } elseif (substr($value, 0, 1) === '+' && 1 === preg_match('{^\+([a-z]+:[0-9]+)$}i', $value, $matches)) {
-
             $value = $this->getHydrationValueUsingInternalRefLookup($matches[1]) ?: $value;
-
         } elseif (substr($value, 0, 1) === '@' && 1 === preg_match('{^@([a-z]+)\?([^=]+)=([^&]+)$}i', $value, $matches)) {
-
             $value = $this->getHydrationValueUsingSearchQuery($matches[1], $matches[2], $matches[3]) ?: $value;
-
         }
 
         return $value;

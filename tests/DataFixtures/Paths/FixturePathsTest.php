@@ -17,7 +17,7 @@ use Scribe\Wonka\Utility\UnitTest\WonkaTestCase;
 /**
  * Class FixturesPathsTest.
  */
-class FixturesPathsTest extends WonkaTestCase
+class FixturePathsTest extends WonkaTestCase
 {
     public function testCartesianProduct()
     {
@@ -35,12 +35,12 @@ class FixturesPathsTest extends WonkaTestCase
         $result = $product->getPaths();
 
         $expect = [
-            "/root/one/some/random/path",
-            "/root/two/some/random/path",
-            "/root/one/another/random/path",
-            "/root/two/another/random/path",
-            "/root/one/one/last/one",
-            "/root/two/one/last/one",
+            '/root/one/some/random/path',
+            '/root/two/some/random/path',
+            '/root/one/another/random/path',
+            '/root/two/another/random/path',
+            '/root/one/one/last/one',
+            '/root/two/one/last/one',
         ];
 
         static::assertTrue($product->hasPaths());
@@ -57,41 +57,41 @@ class FixturesPathsTest extends WonkaTestCase
         ];
 
         $expectedWithLeadingSlashes = [
-            "/../../../app/config/public/fixtures",
-            "app/config/public/fixtures",
-            "config/public/fixtures",
-            "application/config/public/fixtures",
-            "/../../../app/cfg/public/fixtures",
-            "app/cfg/public/fixtures",
-            "cfg/public/fixtures",
-            "application/cfg/public/fixtures",
-            "/../../../app/config/proprietary/fixtures",
-            "app/config/proprietary/fixtures",
-            "config/proprietary/fixtures",
-            "application/config/proprietary/fixtures",
-            "/../../../app/cfg/proprietary/fixtures",
-            "app/cfg/proprietary/fixtures",
-            "cfg/proprietary/fixtures",
-            "application/cfg/proprietary/fixtures",
+            '/../../../app/config/public/fixtures',
+            'app/config/public/fixtures',
+            'config/public/fixtures',
+            'application/config/public/fixtures',
+            '/../../../app/cfg/public/fixtures',
+            'app/cfg/public/fixtures',
+            'cfg/public/fixtures',
+            'application/cfg/public/fixtures',
+            '/../../../app/config/proprietary/fixtures',
+            'app/config/proprietary/fixtures',
+            'config/proprietary/fixtures',
+            'application/config/proprietary/fixtures',
+            '/../../../app/cfg/proprietary/fixtures',
+            'app/cfg/proprietary/fixtures',
+            'cfg/proprietary/fixtures',
+            'application/cfg/proprietary/fixtures',
         ];
 
         $expectedWithoutLeadingSlashes = [
-            "../../../app/config/public/fixtures",
-            "app/config/public/fixtures",
-            "config/public/fixtures",
-            "application/config/public/fixtures",
-            "../../../app/cfg/public/fixtures",
-            "app/cfg/public/fixtures",
-            "cfg/public/fixtures",
-            "application/cfg/public/fixtures",
-            "../../../app/config/proprietary/fixtures",
-            "app/config/proprietary/fixtures",
-            "config/proprietary/fixtures",
-            "application/config/proprietary/fixtures",
-            "../../../app/cfg/proprietary/fixtures",
-            "app/cfg/proprietary/fixtures",
-            "cfg/proprietary/fixtures",
-            "application/cfg/proprietary/fixtures",
+            '../../../app/config/public/fixtures',
+            'app/config/public/fixtures',
+            'config/public/fixtures',
+            'application/config/public/fixtures',
+            '../../../app/cfg/public/fixtures',
+            'app/cfg/public/fixtures',
+            'cfg/public/fixtures',
+            'application/cfg/public/fixtures',
+            '../../../app/config/proprietary/fixtures',
+            'app/config/proprietary/fixtures',
+            'config/proprietary/fixtures',
+            'application/config/proprietary/fixtures',
+            '../../../app/cfg/proprietary/fixtures',
+            'app/cfg/proprietary/fixtures',
+            'cfg/proprietary/fixtures',
+            'application/cfg/proprietary/fixtures',
         ];
 
         $result = FixturePaths::cartesianProductFromPaths(...$cartesianStringPaths);

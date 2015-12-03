@@ -37,8 +37,6 @@ interface FixtureLoaderInterface extends LoaderInterface
      * @var string
      */
     const RESOURCE_XML = 'xml';
-
-
 }
 
 /* EOF */
