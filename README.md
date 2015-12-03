@@ -1,7 +1,7 @@
 # Scribe: Arthur Doctrine Fixtures Library
 
 [![Travis](https://scr.be/arthur-doctrine-fixtures-library/travis_shield)](https://scr.be/arthur-doctrine-fixtures-library/travis)
-[![Scrutinizer](https://scr.be/arthur-doctrine-fixtures-library/scrutinizer_shield)](https://scr.be/arthur-doctrine-fixtures-library/scrutinizer)
+[![Codacy](https://scr.be/arthur-doctrine-fixtures-library/codacy_shield)](https://scr.be/arthur-doctrine-fixtures-library/codacy)
 [![Coveralls](https://scr.be/arthur-doctrine-fixtures-library/coveralls_shield)](https://scr.be/arthur-doctrine-fixtures-library/coveralls)
 [![Gemnasium](https://scr.be/arthur-doctrine-fixtures-library/gemnasium_shield)](https://scr.be/arthur-doctrine-fixtures-library/gemnasium)
 
