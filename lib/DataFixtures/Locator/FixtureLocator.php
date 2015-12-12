@@ -70,15 +70,15 @@ class FixtureLocator implements FixtureLocatorInterface
     {
         $search = $search ?: $this->search;
 
-        $search->filter(function (&$p) use ($file) {
-            if (false !== ($realPath = realpath($p.DIRECTORY_SEPARATOR.($file ?: '')))) {
-                $p = $realPath;
-            }
+        $filtered = $search->filter(function ($p) use ($file) {
+            return (bool) (realpath($p.DIRECTORY_SEPARATOR.($file ?: '')));
+        })->getPaths();
 
-            return (bool) ($realPath ?: false);
-        });
+        for ($i = 0; $i < count($filtered); $i++) {
+            $filtered[$i] = realpath($filtered[$i].DIRECTORY_SEPARATOR.$file);
+        }
 
-        return $search::create(...$search->getPaths());
+        return $search::create(...$filtered);
     }
 }
 
