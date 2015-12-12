@@ -11,6 +11,7 @@
 
 namespace Scribe\Doctrine\DataFixtures\Metadata;
 
+use Scribe\Wonka\Exception\LogicException;
 use Scribe\Wonka\Exception\RuntimeException;
 use Scribe\Wonka\Utility\ClassInfo;
 use Scribe\Doctrine\DataFixtures\FixtureInterface;
@@ -170,11 +171,107 @@ class FixtureMetadata implements FixtureMetadataInterface
     }
 
     /**
-     * @return string
+     * @return string[]
+     *
+     * @throws LogicException
+     */
+    public function getVersions()
+    {
+        $v = $this->tree->get('versions');
+
+        if (!$v) {
+            throw new LogicException('No structure version set within your fixture!');
+        }
+
+        if (!isset($v['self']) || strlen($v['self']) !== 5) {
+            throw new LogicException('Not set or malformed version for self: follow semantic versioning (x.x.x)');
+        }
+
+        if (!isset($v['data']) || strlen($v['data']) !== 5) {
+            throw new LogicException('Not set or malformed version for data: follow semantic versioning (x.x.x)');
+        }
+
+        return [$v['self'], $v['data']];
+    }
+
+    /**
+     * @return string[]
      */
     public function getMode()
     {
-        return (string) ($this->tree->get('orm', 'mode'));
+        $mode = $this->tree->get('strategy', 'persist');
+
+        return $this->normalizeMode($mode);
+    }
+
+    /**
+     * @param mixed $mode
+     *
+     * @return array
+     */
+    protected function normalizeMode($mode)
+    {
+        $normalized = [];
+
+        if (isset($mode['prefer']) && $mode['prefer'] != '~') {
+            $normalized['prefer'] = $mode['prefer'];
+        } else {
+            $normalized['prefer'] = 'merge';
+        }
+
+        if (isset($mode['fallback']) && $mode['fallback'] != '~') {
+            $normalized['fallback'] = $mode['fallback'];
+        } else {
+            $normalized['fallback'] = 'purge';
+        }
+
+        if (isset($mode['failure']) && $mode['failure'] != '~') {
+            $normalized['failure'] = $mode['failure'];
+        } else {
+            $normalized['failure'] = 'warn';
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getCleanupMode()
+    {
+        $mode = $this->tree->get('strategy', 'cleanup');
+
+        return $this->normalizeCleanupMode($mode);
+    }
+
+    /**
+     * @param mixed $mode
+     *
+     * @return array
+     */
+    protected function normalizeCleanupMode($mode)
+    {
+        $normalized = [];
+
+        if (isset($mode['prefer']) && $mode['prefer'] != '~') {
+            $normalized['prefer'] = $mode['prefer'];
+        } else {
+            $normalized['prefer'] = 'purge';
+        }
+
+        if (isset($mode['fallback']) && $mode['fallback'] != '~') {
+            $normalized['fallback'] = $mode['fallback'];
+        } else {
+            $normalized['fallback'] = 'none';
+        }
+
+        if (isset($mode['failure']) && $mode['failure'] != '~') {
+            $normalized['failure'] = $mode['failure'];
+        } else {
+            $normalized['failure'] = 'warn';
+        }
+
+        return $normalized;
     }
 
     /**
@@ -182,7 +279,7 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function getPriority()
     {
-        return (int) ($this->tree->get('orm', 'priority') ?: 0);
+        return (int) ($this->tree->get('strategy', 'priority') ?: 0);
     }
 
     /**
@@ -190,7 +287,7 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function getDependencies()
     {
-        return (array) $this->tree->get('dependencies');
+        return (array) $this->tree->get('depends');
     }
 
     /**
@@ -200,7 +297,7 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function getDependency($name)
     {
-        return $this->tree->get('dependencies', $name);
+        return $this->tree->get('depends', $name);
     }
 
     /**
@@ -208,7 +305,7 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function getData()
     {
-        return (array) $this->tree->get('data');
+        return (array) $this->tree->get('fixture');
     }
 
     /**
@@ -224,7 +321,7 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function isCannibal()
     {
-        return (bool) $this->tree->get('orm', 'cannibal');
+        return (bool) $this->tree->get('strategy', 'cannibal');
     }
 
     /**
@@ -232,7 +329,7 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function getServiceKey()
     {
-        return $this->tree->get('orm', 'entity');
+        return $this->tree->get('service', 'entityPath');
     }
 
     /**
@@ -240,7 +337,7 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function hasReferenceByIndexEnabled()
     {
-        return (bool) ($this->tree->get('references', 'index') || $this->tree->get('references', 'usingId'));
+        return (bool) ($this->tree->get('references', 'identFromFixture'));
     }
 
     /**
@@ -248,7 +345,7 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function hasReferenceByColumnsEnabled()
     {
-        return (bool) ($this->tree->get('references', 'columns') || $this->tree->get('references', 'usingColumns'));
+        return (bool) ($this->tree->get('references', 'buildFromColumns'));
     }
 
     /**
@@ -258,9 +355,7 @@ class FixtureMetadata implements FixtureMetadataInterface
     {
         $prepareColumnSets = function (&$set) { $set = (array) $set; };
 
-        if (null !== ($columnSets = $this->tree->get('references', 'columns'))) {
-            array_walk($columnSets, $prepareColumnSets);
-        } elseif (null !== ($columnSets = $this->tree->get('references', 'usingColumns'))) {
+        if (null !== ($columnSets = $this->tree->get('references', 'buildFromColumns'))) {
             array_walk($columnSets, $prepareColumnSets);
         }
 

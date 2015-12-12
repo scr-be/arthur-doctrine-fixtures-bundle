@@ -47,9 +47,9 @@ class YamlFixtureLoader extends AbstractFixtureLoader
             OutBuffer::line('+p/i-pre-load+p/b- [resolve]+w/i- %s');
             OutBuffer::show($resource);
 
-            OutBuffer::stat('+p/i-resolver+p/b- [reading]+w/- loading file content into memory=+w/-[ +w/i-'.(filesize($resource)).' bytes +w/-]');
+            OutBuffer::stat('+p/i-resolver+p/b- [reading]+w/- reading file content into memory=+w/-[ +w/i-'.(filesize($resource)).' bytes +w/-]');
             $contents = $this->loadFileContents($resource);
-            OutBuffer::stat('+p/i-resolver+p/b- [parsing]+w/- loading yaml config and preparing fixture data');
+            OutBuffer::stat('+p/i-resolver+p/b- [parsing]+w/- loading file content to native type');
             $decoded = $this->loadUsingSymfonyYaml($contents);
             echo PHP_EOL;
         } catch (\Exception $exception) {

@@ -23,6 +23,11 @@ interface FixtureMetadataInterface
     /**
      * @var string
      */
+    const VERSION = '1.0.0';
+
+    /**
+     * @var string
+     */
     const MODE_SKIP = 'skip';
 
     /**
@@ -91,9 +96,19 @@ interface FixtureMetadataInterface
     public function getName();
 
     /**
-     * @return string
+     * @return array
      */
     public function getMode();
+
+    /**
+     * @return string[]|
+     */
+    public function getVersions();
+
+    /**
+     * @return array
+     */
+    public function getCleanupMode();
 
     /**
      * @return int

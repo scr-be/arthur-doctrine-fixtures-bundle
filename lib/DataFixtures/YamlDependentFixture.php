@@ -48,10 +48,10 @@ class YamlDependentFixture extends YamlFixture implements DependentFixtureInterf
      */
     protected function resolveDependencyType(array $depIds)
     {
-        $ormLoader = (bool) (isset($depIds['ormLoader']) ? $depIds['ormLoader'] : false);
+        $ormLoader = (bool) (isset($depIds['autoDepend']) ? $depIds['autoDepend'] : false);
 
-        if ($ormLoader === true && isset($depIds['entity'])) {
-            return $this->resolveContainerParameterToLoader($depIds['entity']);
+        if ($ormLoader === true && isset($depIds['entityPath'])) {
+            return $this->resolveContainerParameterToLoader($depIds['entityPath']);
         }
 
         return false;
