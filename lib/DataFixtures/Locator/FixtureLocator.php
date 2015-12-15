@@ -55,7 +55,7 @@ class FixtureLocator implements FixtureLocatorInterface
             ->locateValidPaths($file)
             ->getPaths();
 
-        return (array) ($single ? array_first($paths) : $paths);
+        return (array) ($single ? getFirstArrayElement($paths) : $paths);
     }
 
     /**

@@ -22,8 +22,8 @@ use Scribe\Doctrine\DataFixtures\Loader\YamlFixtureLoader;
 use Scribe\Doctrine\DataFixtures\Loader\FixtureLoaderResolver;
 use Scribe\Doctrine\DataFixtures\Locator\FixtureLocator;
 use Scribe\Doctrine\DataFixtures\Metadata\FixtureMetadata;
-use Scribe\Doctrine\DataFixtures\Metadata\FixtureMetadataInterface;
 use Scribe\Doctrine\DataFixtures\Paths\FixturePaths;
+use Scribe\Doctrine\DataFixtures\Registrar\PurgedEntityRegistrar;
 use Scribe\Doctrine\Exception\ORMException;
 use Scribe\Doctrine\ORM\Mapping\Entity;
 use Scribe\Wonka\Component\Hydrator\Manager\HydratorManager;
@@ -34,7 +34,6 @@ use Scribe\Wonka\Exception\RuntimeException;
 use Scribe\Wonka\Utility\Reflection\ClassReflectionAnalyser;
 use Scribe\Wonka\Utility\ClassInfo;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\Finder\Finder;
 
 /**
  * Class AbstractFixture.
@@ -47,9 +46,9 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     protected $container;
 
     /**
-     * @var ObjectManager
+     * @var EntityManager
      */
-    protected $objectManager;
+    protected $manager;
 
     /**
      * Holds interpreted fixture data.
@@ -95,6 +94,26 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
      * @var array
      */
     protected $identities = [];
+
+    /**
+     * @var int
+     */
+    protected $countPurge = 0;
+
+    /**
+     * @var int
+     */
+    protected $countUpdate = 0;
+
+    /**
+     * @var int
+     */
+    protected $countInsert = 0;
+
+    /**
+     * @var int
+     */
+    protected $countSkip = 0;
 
     /**
      * Array of arrays containing [arts of a filepath to be combined at runtime (cartesian product).
@@ -193,9 +212,12 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
                 ->setHandler($this)
                 ->setLocator($locator)
                 ->setLoader($loader)
-                ->load();
+                ->load($this->container);
 
             $this->metadata = $metadata;
+
+            $this->removeRegisteredAssociationsPurgedLog();
+
         } catch (\Exception $exception) {
             throw new RuntimeException('Unable to generate metadata for fixture (ORM Loader: %s)', null, $exception, get_class($this));
         }
@@ -209,7 +231,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     public function load(ObjectManager $manager)
     {
         echo PHP_EOL;
-        $this->objectManager = $manager;
+        $this->manager = $manager;
 
         $this->checkVersions();
 
@@ -258,7 +280,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
 
     protected function performFailure($cause)
     {
-        OutBuffer::stat('+y/i-runmode +y/b-[warns]+w/- not importing=[ %s ]+w/- cause=[ %s ]', $this->resolveEntityFqcn(), $cause);
+        OutBuffer::stat('+y/i-runmode +y/b-[warns]+w/- not importing=[ %s ]+w/- cause=[ %s ]', $this->getEntityFQCN(), $cause);
 
         return false;
     }
@@ -268,7 +290,6 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
      */
     protected function performLoad($for, $persistMode, $cleanupMode)
     {
-        $countInsert = $countUpdate = $countSkip = $countPurge = 0;
         $dataFixtures = $this->metadata->getData();
         $countFixtures = count($dataFixtures);
 
@@ -276,7 +297,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             throw new StrategyException('intentional skip');
         }
 
-        $this->performModePreLoad($persistMode, $countPurge);
+        $this->performModePreLoad($persistMode);
 
         if ($persistMode === FixtureMetadata::MODE_SKIP) {
             throw new StrategyException('intentional skip');
@@ -287,16 +308,16 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         $this->entityManagerFlushAndClean();
 
         foreach ($dataFixtures as $index => $data) {
-            $this->entityPopulateNewObj($index, $data, $entity);
+            $entity = $this->getNewHydratedEntity($index, $data);
 
             if ($persistMode === FixtureMetadata::MODE_PURGE || $persistMode === FixtureMetadata::MODE_BLIND) {
-                $this->entityLoadAndPersist($entity, $countInsert);
+                $this->loadAndPersistEntity($entity);
             } else {
-                $this->entityLoadAndDoMerge($index, $entity, $countUpdate, $countSkip);
+                $this->loadAndMergeEntity($index, $entity);
             }
 
-            $this->entityHandleCannibal($entity);
-            $this->entityResolveAllRefs($entity, $index, $data);
+            $this->handleCannibalisticEntity($entity);
+            $this->resolveEntityReferences($entity, $index, $data);
 
             if (($index % $this->insertFlushBatchSize) === 0) {
                 $this->entityManagerFlushAndClean();
@@ -305,78 +326,105 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
 
         $this->entityManagerFlushAndClean();
 
-        $this->entityCleanup($persistMode, $cleanupMode, $countPurge);
+        $this->performCleanup($persistMode, $cleanupMode);
 
         OutBuffer::stat(
             '+g/i-persist +g/b-[ended]+w/- stats=[ +w/i-'.
-            ($countPurge ?: 0).' purges +w/-|+w/i- '.($countUpdate ?: 0).' updates +w/-|+w/i- '.
-            ($countInsert ?: 0).' inserts +w/-|+w/i- '.($countSkip ?: 0).
+            $this->countPurge.' purges +w/-|+w/i- '.$this->countUpdate.' updates +w/-|+w/i- '.
+            $this->countInsert.' inserts +w/-|+w/i- '.$this->countSkip.
             ' skips +w/-]+w/- totals=+w/-[+w/b- '.
-            ($countSkip + $countUpdate + $countInsert).' +w/i-of+w/b- '.$countFixtures.' +w/i-fixtures managed +w/-]'
+            ($this->countSkip + $this->countUpdate + $this->countInsert + $this->countPurge).' +w/i-of+w/b- '.$countFixtures.' +w/i-fixtures managed +w/-]'
         );
     }
 
-    protected function entityCleanup($persistMode, $cleanupMode, &$countPerge)
+    /**
+     * @param string $persistMode
+     * @param string $cleanupMode
+     */
+    protected function performCleanup($persistMode, $cleanupMode)
     {
         if ($persistMode === FixtureMetadata::MODE_PURGE) {
+            OutBuffer::stat('+g/i-removal +g/b-[clean]+w/- skipping cleanup for mode=[+w/i- %s found +w/-]', FixtureMetadata::MODE_PURGE);
+
             return;
         }
 
-        array_walk($this->identities, function(&$identity){
-            $identity = current($identity);
-        });
+        $identities = array_map(function ($identity) {
+            return current($identity);
+        }, $this->identities);
 
-        $repo = $this->objectManager->getRepository($this->resolveEntityFqcn());
-        $all = $repo->findAll();
-        $remove = [];
+        $entities = $this
+            ->manager
+            ->getRepository($this->getEntityFQCN())
+            ->findAll();
 
-        foreach ($all as $entity) {
-            if (!in_array($entity->getIdentity(), $this->identities)) {
-                $remove[] = $entity;
-            }
+        $toRemove = array_values(array_filter($entities, function(Entity $entity) use ($identities) {
+            return (bool) (!in_array($entity->getIdentity(), $identities));
+        }));
+
+        OutBuffer::stat('+g/i-removal +g/b-[clean]+w/- remove stale items from orm=[+w/i- %d found +w/-]', count($toRemove));
+
+        if (count($toRemove) === 0) {
+            return;
         }
 
-        OutBuffer::stat('+g/i-removal +g/b-[start]+w/- removing extra data entries=[ +w/i-'.count($remove).' found +w/-]');
+        $exceptions = [];
 
-        for ($i = 0; $i < count($remove); $i++) {
-            $this->objectManager->remove($entity);
-            $countPerge++;
+        foreach ($toRemove as $i => $entity) {
+            try {
+                $this->manager->remove($entity);
 
-            if ($i % $this->insertFlushBatchSize) {
-                $this->objectManager->flush();
-                $this->objectManager->clear();
+                $this->entityManagerFlushAndClean();
+            } catch (\Exception $exception) {
+                $exceptions[] = $exception;
+
+                continue;
             }
+
+            ++$this->countPurge;
         }
 
-        unset($remove);
+        $this->validateCleanup($exceptions);
+    }
+
+    /**
+     * @param array $exceptions
+     */
+    protected function validateCleanup(array $exceptions)
+    {
+        if (count($exceptions) === 0) {
+            return;
+        }
+
+        OutBuffer::stat('+g/i-removal +g/b-[start]+w/- cleaning completed with errors=[+w/i- %d failed +w/-]', count($exceptions));
     }
 
     /**
      * @return $this
      */
-   protected function checkVersions()
-   {
-       try {
-           list($v_struct, $v_data) = $this->metadata->getVersions();
-           $v_current = FixtureMetadataInterface::VERSION;
-           $v_current_major = substr($v_current, 0, 1);
+    protected function checkVersions()
+    {
+        list($yaml, $yamlValid, $data, $dataValid)
+            = $this->metadata->getMetaAndDataVersionsValidated();
 
-           if (version_compare($v_struct, $v_current_major, '<')) {
-               throw new LogicException('Fixture cannot have a lower structure major-version than running implementation of '.$v_current_major.') but a value of '.$v_struct.' was reported!');
-           }
+        try {
+            if (!$yamlValid) {
+                throw new LogicException('Metadata version is not compatible with fixture-defined version.');
+            }
 
-           if (version_compare($v_struct, $v_current, '>')) {
-               throw new LogicException('Fixture cannot have a greater structure major-version than running implementation of '.$v_current.') but a value of '.$v_struct.' was reported!');
-           }
+            if (!$dataValid) {
+                throw new LogicException('Metadata version is not compatible with fixture-defined version.');
+            }
+        } catch (LogicException $exception) {
 
-           OutBuffer::stat('+g/i-version+g/b- [check]+w/- implementation min/max=[ +w/i-'.$v_current_major.'.0.0/'.$v_current.' +w/-] fixture=[ +w/i-'.$v_struct.' +w/-]');
-       } catch (\Exception $e) {
-           OutBuffer::stat('+y/i-version+y/b- [check]+w/- implementation min/max=[ +w/i-'.$v_current_major.'.0.0/'.$v_current.' +w/-] fixture=[ +w/i-'.$v_struct.' +w/-]');
-           $this->skip = true;
-       }
+            OutBuffer::stat('+y/i-version+y/b- [check]+w/- metadata version required=[+w/i- %s +w/-] declared=[+w/i- %s +w/-]', $this->metadata->getMetaVersionRequired(), $yaml);
+            OutBuffer::stat('+y/i-version+y/b- [check]+w/- object data version required=[+w/i- %s +w/-] declared=[+w/i- %s +w/-]', $this->metadata->getDataVersionRequired(), $data);
 
-       return $this;
-   }
+            $this->skip = true;
+        }
+
+        return $this;
+    }
 
     /**
      * @param string|null $for
@@ -443,6 +491,11 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         return $normalized;
     }
 
+    /**
+     * @param string $for
+     * @param string $strategy
+     * @return mixed
+     */
     protected function normalizeStrategy($for, $strategy)
     {
         return $strategy;
@@ -453,96 +506,201 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
      *
      * @return bool
      */
-    protected function performModePreLoad(&$mode, &$purgeCount)
+    protected function performModePreLoad(&$mode)
     {
-        $entityFqcn = $this->resolveEntityFqcn();
-        list($entityMeta, $identityField, $identityNatural) = $this->resolveEntityMeta();
+        $entityFqcn = $this->getEntityFQCN();
+
+        list($entityMeta, $identityField, $identityNatural) = $this->resolveEntityMetadata();
 
         if ($mode === FixtureMetadata::MODE_MERGE && !$identityNatural) {
             OutBuffer::stat('+y/i-runmode +y/b-[merge]+w/- import strategy unavailable for non-natural entities');
+
             throw new StrategyException('invalid import mode for entity type');
         }
 
-        $entityRepo = $this->objectManager->getRepository($entityFqcn);
-        $entityAssociations = $entityMeta->getAssociationNames();
-
-        if ($mode === FixtureMetadata::MODE_PURGE && count($entityAssociations) > 0) {
-            foreach ($entityAssociations as $a) {
-                if ($entityMeta->isAssociationInverseSide($a)) {
-                    OutBuffer::stat('+y/i-runmode +y/b-[purge]+w/- import strategy unavailable as entity inverses %s',
-                        $entityMeta->getAssociationTargetClass($a));
-                    $mode = FixtureMetadata::MODE_SKIP;
-
-                    return false;
-                }
-            }
+        if ($mode !== FixtureMetadata::MODE_PURGE) {
+            return true;
         }
 
-        if ($mode === FixtureMetadata::MODE_PURGE) {
-            $this->performModePurgePreLoad($entityMeta, $entityRepo, $this->objectManager, $purgeCount);
+        try {
+            $this->performEntityAssociationPurge($entityFqcn);
+        } catch (RuntimeException $exception) {
+            OutBuffer::stat('+y/i-runmode +y/b-[purge]+w/- import strategy unavailable as entity has associations "%s".', implode(',', $entityMeta->getAssociationNames()));
+            $mode = FixtureMetadata::MODE_SKIP;
+
+            return false;
+        } catch (LogicException $exception) {//"strategy -> associations -> purge" set to true i
+            OutBuffer::stat('+y/i-runmode +y/b-[purge]+w/- '.$exception->getMessage());
+            OutBuffer::stat('+y/i-runmode +y/b-[purge]+w/- list of associations required for purge:', $exception->getMessage());
+            foreach ($exception->getAttributes()['a'] as $i => $association) {
+                OutBuffer::stat('+y/i-runmode +y/b-[purge]+w/-   - %s', $association);
+            }
+
+            $mode = FixtureMetadata::MODE_SKIP;
+
+            return false;
         }
 
         return true;
     }
 
-    /**
-     * @param ClassMetadataInfo $meta
-     * @param EntityRepository  $repo
-     * @param EntityManager     $em
-     */
-    protected function performModePurgePreLoad(ClassMetadataInfo $meta, EntityRepository $repo, EntityManager $em, &$purgeCount)
+    protected function performEntityAssociationPurge($entityFQCN)
     {
-        $deletions = $repo->findAll();
+        $metadata = $this->getClassMetadata($entityFQCN);
 
-        OutBuffer::stat('+g/b-preload [purge]+w/- truncating previous entities=[ +w/i-%d found +w/-]', count($deletions));
-
-        foreach ($deletions as $d) {
-            $em->remove($d);
-            ++$purgeCount;
+        if (count($metadata->getAssociationNames()) === 0) {
+            return;
         }
 
-        $em->flush();
+        $associationMap = $this->getEntityAssociationMap($entityFQCN);
 
-        foreach ($deletions as $d) {
-            $em->clear($d);
+        if (count($associationMap) > 1 && !$this->metadata->isAssociationPurgeAllowed()) {
+            throw LogicException::create()
+                ->setMessage('refusing to purge discovered associations=[+w/i- %d found +w/-] without explicit config', count($associationMap))
+                ->setAttributes(['a' => $associationMap]);
         }
 
-        unset($deletions);
+        foreach ($associationMap as $a) {
+            if ($this->addRegisteredAssociationPurgedToLog($a)) {
+                $this->performEntityPurge($a);
+            }
+        }
+    }
+
+    /**
+     * @return string
+     */
+    protected function getRegisteredAssociationsPurgedLogFilePath()
+    {
+        $logDirectory = $this->container->getParameter('kernel.logs_dir');
+
+        return $logDirectory.DIRECTORY_SEPARATOR.'arthur-doctrine-fixtures-associations-purged.serial';
+    }
+
+    /**
+     * @return $this
+     */
+    protected function removeRegisteredAssociationsPurgedLog()
+    {
+        if (file_exists($file = $this->getRegisteredAssociationsPurgedLogFilePath())) {
+            unlink($file);
+        }
+
+        return $this;
+    }
+
+    protected function addRegisteredAssociationPurgedToLog($a)
+    {
+        $logFilePath = $this->getRegisteredAssociationsPurgedLogFilePath();
+        $registrar = new PurgedEntityRegistrar();
+
+        if (file_exists($logFilePath)) {
+            $registrar = unserialize(file_get_contents($logFilePath));
+        }
+
+        if ($registrar->contains($a)) {
+            return false;
+        }
+
+        $registrar->add($a);
+
+        file_put_contents($logFilePath, serialize($registrar));
+
+        return true;
+    }
+
+    /**
+     * @param string $entityFQCN
+     *
+     * @return string[]
+     */
+    protected function getEntityAssociationMap($entityFQCN)
+    {
+        $metadata = $this
+            ->manager
+            ->getClassMetadata($entityFQCN);
+
+        $map = [];
+        $associations = $metadata->getAssociationNames();
+
+        foreach ($associations as $a) {
+            if ($metadata->isAssociationInverseSide($a)) {
+                $map = array_merge($map, $this->getEntityAssociationMap($metadata->getAssociationTargetClass($a)));
+            }
+
+            $map = array_merge((array) $metadata->getAssociationTargetClass($a), $map);
+        }
+
+        $map = array_reverse(array_merge((array) $entityFQCN, $map));
+
+        return array_reverse(array_unique($map));
+    }
+
+    /**
+     * @param string $entityFQCN
+     */
+    protected function performEntityPurge($entityFQCN)
+    {
+        $toDelete = $this
+            ->manager
+            ->getRepository($entityFQCN)
+            ->findAll();
+
+        OutBuffer::stat('+g/b-preload [purge]+w/- truncating previous entities=[+w/i- %d found +w/-] for=[+w/i- %s +w/-] ', count($toDelete), ClassInfo::getClassName($entityFQCN));
+
+        foreach ($toDelete as $d) {
+            $this
+                ->manager
+                ->remove($d);
+
+            ++$this->countPurge;
+        }
+
+        $this->entityManagerFlushAndClean();
+    }
+
+    /**
+     * @param string $entityName
+     *
+     * @return \Doctrine\Common\Persistence\Mapping\ClassMetadata
+     */
+    protected function getClassMetadata($entityName)
+    {
+        return $this
+            ->manager
+            ->getClassMetadata($entityName);
     }
 
     /**
      * @return mixed[]
      */
-    protected function resolveEntityMeta()
+    protected function resolveEntityMetadata()
     {
+        $entityMeta = $this->getClassMetadata($this->getEntityFQCN());
+
         try {
-            $entityMeta = $this
-                ->objectManager
-                ->getClassMetadata($this->entityNamespace);
-
-            $identityNatural = $entityMeta->isIdentifierNatural();
-            $identityField = $entityMeta->getSingleIdentifierFieldName();
-
-            return [$entityMeta, $identityField, $identityNatural];
+            return [
+                $entityMeta,
+                $entityMeta->isIdentifierNatural(),
+                $entityMeta->getSingleIdentifierFieldName()
+            ];
         } catch (\Exception $e) {
             throw new \RuntimeException('Could not get entity metadata/identity information.');
         }
     }
 
     /**
-     * @return bool|string
+     * @return string
      */
-    protected function resolveEntityFqcn()
+    protected function getEntityFQCN()
     {
-        $tmp = $this->entityNamespace;
+        $entityFQCN = $this->entityNamespace;
 
-        if (!$this->entityNamespace &&
-            false === $this->resolveEntityFqnsFast() &&
-            false === $this->resolveEntityFqnsSlow()) {
-            throw new RuntimeException('Could not resolve namespace for entity associated with '.$this->metadata->getName());
+        if (!$this->entityNamespace) {
+            $this->entityNamespace = $this->metadata->getEntityFQCN();
         }
 
-        if ($tmp !== $this->entityNamespace) {
+        if ($entityFQCN !== $this->entityNamespace) {
             OutBuffer::stat('+g/i-reflect+g/b- [paths]+w/- entity fqcn=[+w/i- '.$this->entityNamespace.' +w/-]');
         }
 
@@ -552,110 +710,25 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     /**
      * @return $this
      */
-    protected function resolveEntityFqnsFast()
-    {
-        $managedNamespaces = $this->objectManager
-            ->getConfiguration()
-            ->getEntityNamespaces();
-
-        //OutBuffer::stat('+g/i-reflect+g/b- [paths]+w/- resolving entity fully qualified class name');
-        foreach ($managedNamespaces as $namespace) {
-            if (class_exists($resolvedNamespace = $namespace.'\\'.$this->metadata->getName())) {
-                $this->entityNamespace = $resolvedNamespace;
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @return $this
-     */
-    protected function resolveEntityFqnsSlow()
-    {
-        $selfRootName = ClassInfo::getNamespaceSetByInstance($this);
-        $selfRootName = array_shift($selfRootName);
-        $resolvedNamespace = null;
-
-        $resolverSearchDir = $this
-                ->container
-                ->getParameter('kernel.root_dir').'/../';
-
-        $resolverResolverS = function (\SplFileInfo $file) {
-            if (1 === preg_match('{^namespace ([^\s\n;]+)}im', file_get_contents($file->getPathname()), $matches)) {
-                $fqcn = $matches[1].'\\'.$this->metadata->getName();
-
-                return class_exists($fqcn) ? $fqcn : false;
-            }
-        };
-
-        OutBuffer::stat('+y/i-reflect +y/b-[paths]+w/- resolving entity fully qualified class name using fallback (slow) routine');
-
-        $fs = Finder::create()
-            ->followLinks()
-            ->name($this->metadata->getName().'.php')
-            ->in(realpath($resolverSearchDir));
-
-        foreach ($fs as $f) {
-            if (($resolvedNamespace = $resolverResolverS($f)) && substr($resolvedNamespace, 0, strlen($selfRootName)) === $selfRootName) {
-                $this->entityNamespace = $resolvedNamespace;
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @return $this
-     */
     protected function entityManagerFlushAndClean()
     {
-        $this->objectManager->flush();
-        $this->objectManager->clear();
+        $this->manager->flush();
+        $this->manager->clear();
 
         return $this;
     }
 
     /**
-     * @param int|mixed $index
-     * @param array[]   $data
-     * @param $entity   mixed
-     *
-     * @throws \Exception
-     *
-     * @return \Scribe\Doctrine\ORM\Mapping\Entity|mixed
-     */
-    protected function entityPopulateNewObj($index, $data, &$entity)
-    {
-        try {
-            $entity = $this->getNewPopulatedEntity($index, $data);
-        } catch (\Exception $e) {
-            throw $e;
-        }
-
-        return $entity;
-    }
-
-    /**
      * @param \Scribe\Doctrine\ORM\Mapping\Entity|mixed $entity
-     * @param int                                       $countInsert
      *
      * @throws \Exception
      *
      * @return $this
      */
-    protected function entityLoadAndPersist(&$entity, &$countInsert)
+    protected function loadAndPersistEntity($entity)
     {
-        try {
-            $this->objectManager->persist($entity);
-            ++$countInsert;
-        } catch (\Exception $e) {
-            throw $e;
-        }
+        $this->manager->persist($entity);
+        ++$this->countInsert;
 
         return $this;
     }
@@ -663,19 +736,15 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     /**
      * @param \Scribe\Doctrine\ORM\Mapping\Entity|mixed $entity
      * @param mixed                                     $index
-     * @param int                                       $countUpdate
-     * @param int                                       $countSkip
      *
      * @throws \Exception
      *
      * @return $this
      */
-    protected function entityLoadAndDoMerge($index, &$entity, &$countUpdate, &$countSkip)
+    protected function loadAndMergeEntity($index, $entity)
     {
         try {
-            $entityMetadata = $this
-                ->objectManager
-                ->getClassMetadata(get_class($entity));
+            $entityMetadata = $this->getClassMetadata($this->getEntityFQCN());
 
             $this->identities[] = $identity = $entityMetadata->getIdentifierValues($entity);
 
@@ -687,30 +756,35 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
                 OutBuffer::stat('+y/b-preload +y/i-[warns]+w/- import strategy "merge" unavailable due to failed identifier map resolution');
             }
 
-            $entitySearched = $this
-                ->objectManager
-                ->getRepository(get_class($entity))
-                ->findOneBy($identity);
+            $repository = $this
+                ->manager
+                ->getRepository($this->getEntityFQCN());
 
-            $this->objectManager->initializeObject($entitySearched);
+            $entitySearched = $repository->findOneBy($identity);
+
+            $this->manager->initializeObject($entitySearched);
+            $this->manager->merge($entity);
+            $this->manager->refresh($entitySearched);
 
             if ($entitySearched && !$entity->isEqualTo($entitySearched)) {
                 $mapper = new HydratorManager(new HydratorMapping(true));
                 $entity = $mapper->getMappedObject($entity, $entitySearched);
-                $this->objectManager->remove($entitySearched);
-                $this->objectManager->merge($entity);
-                $this->objectManager->persist($entity);
-                $this->objectManager->persist($entity);
-                $this->objectManager->flush();
-                ++$countUpdate;
+                $this->manager->remove($entitySearched);
+                $this->manager->merge($entity);
+                $this->manager->persist($entity);
+                $this->manager->flush();
+                $this->manager->clear();
+                ++$this->countUpdate;
+
+                return $this;
             } elseif ($entitySearched && $entity->isEqualTo($entitySearched)) {
                 $entity = $entitySearched;
-                ++$countSkip;
+                ++$this->countSkip;
 
                 return $this;
             }
 
-            $this->entityLoadAndPersist($entity, $countNotTracked);
+            $this->loadAndPersistEntity($entity);
         } catch (\Exception $e) {
             throw $e;
         }
@@ -719,33 +793,34 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     }
 
     /**
-     * @param \Scribe\Doctrine\ORM\Mapping\Entity|mixed $entity
+     * @param Entity $entity
      *
      * @return $this
      */
-    protected function entityHandleCannibal(&$entity)
+    protected function handleCannibalisticEntity(Entity $entity)
     {
         if ($this->metadata->isCannibal()) {
-            $this->objectManager->flush();
+            $this->manager->flush($entity);
+            $this->manager->detach($entity);
         }
 
         return $this;
     }
 
     /**
-     * @param \Scribe\Doctrine\ORM\Mapping\Entity|mixed $entity
+     * @param Entity $entity
      * @param int|mixed                                 $index
      * @param array[]                                   $data
      *
      * @return $this
      */
-    protected function entityResolveAllRefs(&$entity, $index, $data)
+    protected function resolveEntityReferences(Entity $entity, $index, $data)
     {
         if ($this->metadata->hasReferenceByIndexEnabled()) {
             $this->addReference($this->metadata->getName().':'.$index, $entity);
         }
 
-        if ($this->metadata->hasReferenceByColumnsEnabled()) {
+        if ($this->metadata->hasColumnReferences()) {
             $referenceByColumnsSetConcat = function ($columns) use ($data) {
                 array_walk($columns, function (&$c) use ($data) { $c = $data[$c]; });
 
@@ -756,7 +831,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
                 $this->addReference($this->metadata->getName().':'.$referenceByColumnsSetConcat($columns), $entity);
             };
 
-            array_map($referenceByColumnsSetRegister, $this->metadata->getReferenceByColumnsSets());
+            array_map($referenceByColumnsSetRegister, $this->metadata->getColumnReferenceCollections());
         }
 
         return $this;
@@ -764,78 +839,238 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
 
     /**
      * @param int     $index
-     * @param array[] $values
+     * @param mixed[] $values
      *
-     * @return \Scribe\Doctrine\ORM\Mapping\Entity|mixed
+     * @return Entity
      */
-    protected function getNewPopulatedEntity($index, $values)
+    protected function getNewHydratedEntity($index, $values)
     {
-        try {
-            $entityPath = $this->container->getParameter($this->metadata->getServiceKey());
-            $entity = new $entityPath();
-        } catch (\Exception $exception) {
-            throw new RuntimeException('Unable to locate service id %s.', null, $exception, $this->metadata->getServiceKey());
-        }
+        $entity = $this->metadata->getEntityInstance();
 
         try {
-            return $this->hydrateEntity($entity, $index, $values);
-        } catch (\Exception $exception) {
-            throw new RuntimeException('Could not hydrate entity: fixture %s, index %s.', null, $exception, $this->metadata->getName(), (string) $index);
+            $this->hydrateEntity($entity, $values);
+
+            return $entity;
+        } catch (RuntimeException $exception) {
+            throw new RuntimeException(
+                'Could not get hydrated entity "%s" for fixture "%s" item "%s".', null, $exception,
+                get_class($entity), $this->metadata->getName(), (string) $index
+            );
         }
     }
 
     /**
-     * @param \Scribe\Doctrine\ORM\Mapping\Entity|mixed $entity
-     * @param int|mixed                                 $index
-     * @param array[]                                   $values
+     * @param Entity  $entity
+     * @param mixed[] $values
      *
-     * @return \Scribe\Doctrine\ORM\Mapping\Entity|mixed
+     * @return Entity
      */
-    protected function hydrateEntity(Entity $entity, $index, $values)
+    protected function hydrateEntity(Entity $entity, $values)
     {
         foreach ($values as $property => $value) {
-            $methodCall = $this->getHydrateEntityMethodCall($property);
-            $methodData = $this->getHydrateEntityMethodData($property, $values);
+            $data = $this->getFixtureDataValueResolved($property, $values);
+            $this->hydrateEntityData($entity, $property, $data);
+        }
+    }
 
-            try {
-                $entity = $this->hydrateEntityData($entity, $property, $methodCall, $methodData);
-            } catch (\Exception $exception) {
-                $entity = $this->hydrateEntityData($entity, $property, $methodCall, new ArrayCollection((array) $methodData));
+    /**
+     * @param Entity $entity
+     * @param $property
+     * @param $data
+     */
+    protected function hydrateEntityData(Entity $entity, $property, $data)
+    {
+        $exceptions = [];
+        $setterMethod = sprintf('set%s', ucfirst($property));
+        $dataCollection = new ArrayCollection((array) $data);
+
+        try {
+            $this->hydrateEntityDataUsingSetterMethod($entity, $setterMethod, $data);
+
+            return;
+        } catch (\Exception $exception) {
+            $exceptions[] = $exception;
+        }
+
+        try {
+            $this->hydrateEntityDataUsingSetterMethod($entity, $setterMethod, $dataCollection);
+
+            return;
+        } catch (\Exception $exception) {
+            $exceptions[] = $exception;
+        }
+
+        try {
+            $this->hydrateEntityDataUsingPropertyReflection($entity, $property, $data);
+
+            return;
+        } catch (\Exception $exception) {
+            $exceptions[] = $exception;
+        }
+
+        try {
+            $this->hydrateEntityDataUsingPropertyReflection($entity, $property, $dataCollection);
+
+            return;
+        } catch (\Exception $exception) {
+            $exceptions[] = $exception;
+        }
+
+        $this->validateEntityHydration($entity, $property, [$data, $dataCollection], $exceptions);
+    }
+
+    /**
+     * @param Entity                    $entity
+     * @param string                    $property
+     * @param mixed[]|ArrayCollection[] $possibleData
+     * @param \Exception[]              $exceptions
+     *
+     * @throws RuntimeException
+     *
+     * @return true
+     */
+    protected function validateEntityHydration(Entity $entity, $property, array $possibleData, array $exceptions)
+    {
+        if (count($exceptions) !== 0) {
+            throw $this->getNewHydrationException($exceptions);
+        }
+
+        $data = $this->getEntityReflectionProperty($entity, $property)->getValue($entity);
+
+        foreach ($possibleData as $possible) {
+            if ($data === $possible) {
+                return true;
             }
         }
 
-        return $entity;
+        throw new RuntimeException(
+            'Data was set without error but could not be verified for %s::%s', null, null,
+            get_class($entity), $property
+        );
     }
 
     /**
-     * @param \Scribe\Doctrine\ORM\Mapping\Entity|mixed $entity
-     * @param string                                    $property
-     * @param string                                    $methodCall
-     * @param mixed                                     $methodData
+     * @param \Exception[] $exceptions
      *
-     * @return \Scribe\Doctrine\ORM\Mapping\Entity|mixed
+     * @return RuntimeException
      */
-    protected function hydrateEntityData(Entity $entity, $property, $methodCall, $methodData)
+    protected function getNewHydrationException(array $exceptions)
+    {
+        $errors = array_map(function (\Exception $exception) {
+            return $exception->getMessage();
+        }, $exceptions);
+
+        return new RuntimeException('Could not hydrate entities: %s', null, null, (string) implode(' / ', $errors));
+    }
+
+    /**
+     * @param Entity $entity
+     * @param string $method
+     * @param mixed  $data
+     */
+    protected function hydrateEntityDataUsingSetterMethod(Entity $entity, $method, $data)
+    {
+        if (!method_exists($entity, $method)) {
+            throw new RuntimeException('Method "%s::%s" does not exist.', null, null, get_class($entity), $method);
+        }
+
+        $parameters = (array) $this->getEntityReflectionMethodParameters($entity, $method);
+
+        if (count($parameters) === 0) {
+            throw new RuntimeException('Method "%s::%s" does not accept any parameters for "%s".', null, null, get_class($entity), $method);
+        }
+
+        $firstParameter = current($parameters);
+
+        if (!method_exists($firstParameter, 'getType')) {
+            throw new RuntimeException('Unsuported parameter reflection version.');
+        }
+
+        if (null !== ($parameterType = current($parameters)->getType())) {
+            $this->validateParameterType($entity, $method, $parameterType, $data);
+        }
+
+        try {
+            $entity->{$method}($data);
+        } catch (\Exception $e) {
+            throw new RuntimeException('Could not set data using method "%s::%s"', null, null, get_class($entity), $method);
+        }
+    }
+
+    protected function validateParameterType(Entity $entity, $method, \ReflectionType $type, $data)
+    {
+        $typeString = (string) $type;
+        $typeMethod = 'is_'.$typeString;
+
+        if (!function_exists($typeMethod)) {
+            $typeClass = $typeString;
+            $typeString = 'object';
+            $typeMethod = 'is_object';
+        }
+
+        if (true === $typeMethod($data)) {
+            return;
+        }
+
+        throw new RuntimeException(
+            'Method "%s::%s" expects "%s" but got "%s" for fixture identity "%s".', null, null,
+            get_class($entity), $method,
+            (isset($typeClass) ? $typeClass : $typeString),
+            (gettype($data) . (is_object($data) ? sprintf('" type "%s', get_class($data)) : '')),
+            ($entity->hasIdentity() ? $entity->getIdentity() : spl_object_hash($entity))
+        );
+    }
+
+    /**
+     * @param Entity $entity
+     * @param string $property
+     * @param mixed  $data
+     */
+    protected function hydrateEntityDataUsingPropertyReflection(Entity $entity, $property, $data)
     {
         try {
-            $reflectProp = (new ClassReflectionAnalyser(new \ReflectionClass($entity)))
-                ->setPropertyPublic($property);
-            $reflectProp->setValue($entity, $methodData);
-
-            return $entity;
+            $this
+                ->getEntityReflectionProperty($entity, $property)
+                ->setValue($entity, $data);
         } catch (\Exception $exception) {
-            throw new RuntimeException('Could not assign property "%s" via property, setter or reflection in fixture %s.', null, $exception, $property, $this->metadata->getName());
+            throw new RuntimeException('Could not set data using %s::%s.', null, $exception, $property, get_class($entity));
         }
     }
 
     /**
+     * @param Entity $entity
      * @param string $property
-     *
-     * @return string
+     * @return \ReflectionProperty
      */
-    protected function getHydrateEntityMethodCall($property)
+    protected function getEntityReflectionProperty(Entity $entity, $property)
     {
-        return (string) sprintf('set%s', ucfirst($property));
+        $entityReflection = new ClassReflectionAnalyser(new \ReflectionClass($entity));
+
+        return $entityReflection->setPropertyPublic($property);
+    }
+
+    /**
+     * @param Entity $entity
+     * @param string $method
+     * @return \ReflectionMethod
+     */
+    protected function getEntityReflectionMethod(Entity $entity, $method)
+    {
+        $entityReflection = new ClassReflectionAnalyser(new \ReflectionClass($entity));
+
+        return $entityReflection->setMethodPublic($method);
+    }
+
+    /**
+     * @param Entity $entity
+     * @param string $method
+     * @return \ReflectionParameter[]
+     */
+    protected function getEntityReflectionMethodParameters(Entity $entity, $method)
+    {
+        $methodReflection = $this->getEntityReflectionMethod($entity, $method);
+
+        return $methodReflection->getParameters();
     }
 
     /**
@@ -844,27 +1079,13 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
      *
      * @return array|mixed
      */
-    protected function getHydrateEntityMethodData($property, array $values = null)
+    protected function getFixtureDataValueResolved($property, array $values = null)
     {
-        if (!array_key_exists($property, $values)) {
-            throw new RuntimeException('Could not find index %s in fixture %s.', null, null, $property, $this->metadata->getName());
-        }
-
         if (is_array($values[$property])) {
-            return $this->getHydrationValueSet($values[$property]);
+            return (array) array_map([$this, 'resolveFixtureDataValue'], $values[$property]);
         }
 
-        return $this->getHydrationValue($values[$property]);
-    }
-
-    /**
-     * @param array $valueSet
-     *
-     * @return array
-     */
-    protected function getHydrationValueSet(array $valueSet = [])
-    {
-        return (array) array_map([$this, 'getHydrationValue'], $valueSet);
+        return $this->resolveFixtureDataValue($values[$property]);
     }
 
     /**
@@ -872,7 +1093,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
      *
      * @return mixed
      */
-    protected function getHydrationValue($value)
+    protected function resolveFixtureDataValue($value)
     {
         if (substr($value, 0, 2) === '++') {
             $value = $this->getHydrationValueUsingInternalRefLookup(substr($value, 2)) ?: $value;
@@ -906,15 +1127,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
      */
     protected function getHydrationValueUsingSearchQuery($dependencyLookup, $column, $criteria)
     {
-        if (!($dependency = $this->metadata->getDependency($dependencyLookup)) || !(isset($dependency['repository']))) {
-            throw new RuntimeException('Missing dependency repo config for %s as called in fixture %s.', null, null, $dependencyLookup, $this->metadata->getName());
-        }
-
-        if (!$this->container->has($dependency['repository'])) {
-            throw new RuntimeException('Dependency %s for fixture %s cannot be found in container.', null, null, $dependencyLookup, $this->metadata->getName());
-        }
-
-        $repo = $this->container->get($dependency['repository']);
+        $repo = $this->metadata->getRepositoryInstance();
         $call = isset($dependency['findMethod']) ? $dependency['findMethod'] : 'findBy'.ucwords($column);
 
         try {

@@ -24,68 +24,7 @@ class YamlDependentFixture extends YamlFixture implements DependentFixtureInterf
      */
     public function getDependencies()
     {
-        $dependencies = [];
-
-        foreach ($this->metadata->getDependencies() as $name => $type) {
-            if (!($className = $this->resolveDependencyType($type))) {
-                continue;
-            }
-
-            $dependencies[] = $className;
-        }
-
-        if (count($dependencies) === 0) {
-            throw new \RuntimeException(sprintf('No dependencies defined for %s.', $this->metadata->getName()));
-        }
-
-        return (array) $dependencies;
-    }
-
-    /**
-     * @param array $depIds
-     *
-     * @return bool|string
-     */
-    protected function resolveDependencyType(array $depIds)
-    {
-        $ormLoader = (bool) (isset($depIds['autoDepend']) ? $depIds['autoDepend'] : false);
-
-        if ($ormLoader === true && isset($depIds['entityPath'])) {
-            return $this->resolveContainerParameterToLoader($depIds['entityPath']);
-        }
-
-        return false;
-    }
-
-    /**
-     * @param string $service
-     *
-     * @return bool|string
-     */
-    protected function resolveContainerParameterToLoader($service)
-    {
-        if ($value = $this->container->getParameter($service)) {
-            return $this->resolveEntityClassToDependency($value);
-        }
-
-        return false;
-    }
-
-    /**
-     * @param string $value
-     *
-     * @return bool|string
-     */
-    protected function resolveEntityClassToDependency($value)
-    {
-        if (1 !== preg_match('{(Bundle\\\)((?:[^\s]*\\\)Entity[^\s]*\b)}', $value, $matches)) {
-            return false;
-        }
-
-        $resolvedPath = str_replace($matches[0], $matches[1].'DataFixtures\\ORM', $value)
-            .'\\Load'.ClassInfo::getClassName($value).'Data';
-
-        return class_exists($resolvedPath) ? $resolvedPath : false;
+        return $this->metadata->getAutoLoadedDependencies(get_called_class());
     }
 }
 

@@ -11,6 +11,7 @@
 
 namespace Scribe\Doctrine\DataFixtures\Metadata;
 
+use Scribe\Doctrine\ORM\Mapping\Entity;
 use Scribe\Wonka\Exception\LogicException;
 use Scribe\Wonka\Exception\RuntimeException;
 use Scribe\Wonka\Utility\ClassInfo;
@@ -18,12 +19,18 @@ use Scribe\Doctrine\DataFixtures\FixtureInterface;
 use Scribe\Doctrine\DataFixtures\Loader\FixtureLoaderResolverInterface;
 use Scribe\Doctrine\DataFixtures\Locator\FixtureLocatorInterface;
 use Scribe\Doctrine\DataFixtures\Tree\TreeStore;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * FixtureMetadata.
  */
 class FixtureMetadata implements FixtureMetadataInterface
 {
+    /**
+     * @var ContainerInterface
+     */
+    protected $container;
+
     /**
      * @var FixtureInterface
      */
@@ -85,10 +92,13 @@ class FixtureMetadata implements FixtureMetadataInterface
     protected $tree;
 
     /**
+     * @param ContainerInterface $container
+     *
      * @return $this
      */
-    public function load()
+    public function load(ContainerInterface $container)
     {
+        $this->container = $container;
         $this->className = $this->getHandlerClassName($this->handler);
         $this->type = $this->handler->getType();
         $this->nameTemplate = $this->resolveFileNameTemplate();
@@ -163,6 +173,40 @@ class FixtureMetadata implements FixtureMetadataInterface
     }
 
     /**
+     * @param string $parameter
+     *
+     * @return mixed
+     */
+    public function getParameter($parameter)
+    {
+        if ($this->container->hasParameter($parameter)) {
+            return $this->container->getParameter($parameter);
+        }
+
+        throw new RuntimeException(
+            'Parameter "%s" doesn\'t exist in container for "%s".', null, null,
+            $parameter, $this->getName()
+        );
+    }
+
+    /**
+     * @param string $key
+     *
+     * @return mixed
+     */
+    public function getService($key)
+    {
+        if ($this->container->has($key)) {
+            return $this->container->get($key);
+        }
+
+        throw new RuntimeException(
+            'Service "%s" doesn\'t exist in container for "%s".', null, null,
+            $key, $this->getName()
+        );
+    }
+
+    /**
      * @return string
      */
     public function getName()
@@ -171,27 +215,125 @@ class FixtureMetadata implements FixtureMetadataInterface
     }
 
     /**
-     * @return string[]
+     * @param \Closure|null $validateMeta
+     * @param \Closure|null $validateData
      *
-     * @throws LogicException
+     * @return string[]|bool[]
+     *
+     * @throws RuntimeException
      */
-    public function getVersions()
+    public function getMetaAndDataVersionsValidated(\Closure $validateMeta = null, \Closure $validateData = null)
     {
-        $v = $this->tree->get('versions');
+        $validateMeta = $validateMeta instanceof \Closure ? $validateMeta : function($version) {
+            return call_user_func([$this, 'validateVersion'], $version, $this->getMetaVersionRequired());
+        };
 
-        if (!$v) {
-            throw new LogicException('No structure version set within your fixture!');
+        $validateData = $validateData instanceof \Closure ? $validateData : function($version) {
+            return call_user_func([$this, 'validateVersion'], $version, $this->getDataVersionRequired());
+        };
+
+        return $this->validateVersions(
+            $this->getVersions('meta_format'),
+            $validateMeta,
+            $this->getVersions('data_object'),
+            $validateData
+        );
+    }
+
+    /**
+     * @param string[] $for
+     *
+     * @return string[]|string
+     */
+    public function getVersions(...$for)
+    {
+        $versions = (array) array_map(function ($which) {
+            if (null !== ($v = $this->tree->get('versions', $which))) {
+                return $v;
+            }
+
+            throw new RuntimeException('Version "%s" not defined for "%s".', null, null, $which, $this->getName());
+        }, $for);
+
+        return (count($versions) === 1 ? current($versions) : $versions);
+    }
+
+    /**
+     * @param string        $metaRunning
+     * @param string        $dataRunning
+     * @param \Closure|null $validateMeta
+     * @param \Closure|null $validateData
+     *
+     * @return bool[]
+     */
+    public function validateVersions($metaRunning, \Closure $validateMeta = null, $dataRunning, \Closure $validateData = null)
+    {
+        return [
+            $metaRunning,
+            ($validateMeta instanceof \Closure ? $validateMeta($metaRunning) : null),
+            $dataRunning,
+            ($validateData instanceof \Closure ? $validateData($dataRunning) : null),
+        ];
+    }
+
+    /**
+     * @param string $running
+     * @param string $require
+     *
+     * @return bool
+     */
+    protected function validateVersion($running, $require)
+    {
+        $requireMajor = substr($require, 0, 1).'.0.0';
+        $runningMajor = substr($running, 0, 1).'.0.0';
+
+        return (bool) (
+            true !== version_compare($running, $require, '>') &&
+            true === version_compare($runningMajor, $requireMajor, '=')
+        );
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getMetaVersion()
+    {
+        return $this->getVersions('meta_format');
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getDataVersion()
+    {
+        return $this->getVersions('data_object');
+    }
+
+    /**
+     * @return string
+     */
+    public function getMetaVersionRequired()
+    {
+        return self::VERSION;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDataVersionRequired()
+    {
+        $entityFQCN = $this->getEntityFQCN();
+
+        if (defined($entityFQCN.'::VERSION')) {
+            return constant($entityFQCN.'::VERSION');
         }
 
-        if (!isset($v['self']) || strlen($v['self']) !== 5) {
-            throw new LogicException('Not set or malformed version for self: follow semantic versioning (x.x.x)');
-        }
+        throw new RuntimeException('No data version set in entity at "%s::%s".', null, null, $entityFQCN, 'VERSION');
+    }
 
-        if (!isset($v['data']) || strlen($v['data']) !== 5) {
-            throw new LogicException('Not set or malformed version for data: follow semantic versioning (x.x.x)');
-        }
-
-        return [$v['self'], $v['data']];
+    public function isAssociationPurgeAllowed()
+    {
+        return (bool) ($this->tree->get('strategy', 'associations', 'purge'));
     }
 
     /**
@@ -287,7 +429,7 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function getDependencies()
     {
-        return (array) $this->tree->get('depends');
+        return (array) array_keys($this->tree->get('depends'));
     }
 
     /**
@@ -298,6 +440,79 @@ class FixtureMetadata implements FixtureMetadataInterface
     public function getDependency($name)
     {
         return $this->tree->get('depends', $name);
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return string
+     */
+    public function getDependencyEntityParameter($name)
+    {
+        $dependency = $this->getDependency($name);
+
+        if (!isset($dependency['entity_class'])) {
+            throw new RuntimeException('No entity class container parameter set for %s in %s.', null, null, $this->getName(), $name);
+        }
+
+        return $dependency['entity_class'];
+    }
+
+    /**
+     * @param string $fixtureFQCN
+     *
+     * @return string[]
+     */
+    public function getAutoLoadedDependencies($fixtureFQCN)
+    {
+        $dependencies = array_filter($this->getDependencies(), function ($d) {
+            return (bool) $this->isAutoLoadedDependency($d);
+        });
+
+        return $this->getDependenciesResolved($fixtureFQCN, $dependencies);
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function isAutoLoadedDependency($name)
+    {
+        $d = $this->getDependency($name);
+
+        return (bool) (isset($d['auto_depends']) && true == $d['auto_depends']);
+    }
+
+    /**
+     * @param string   $fixtureFQCN
+     * @param string[] $dependencies
+     *
+     * @return bool|string
+     */
+    protected function getDependenciesResolved($fixtureFQCN, array $dependencies = null)
+    {
+        return (array) array_map(function ($d) use ($fixtureFQCN) {
+            return $this->resolveDependencyToFixtureClass($d, $fixtureFQCN);
+        }, $dependencies ?: $this->getDependencies());
+    }
+
+    /**
+     * @param string $dependencyName
+     * @param string $fixtureFQCN
+     *
+     * @return bool|string
+     */
+    protected function resolveDependencyToFixtureClass($dependencyName, $fixtureFQCN)
+    {
+        $entityFQCN = $this->getParameter(
+            $this->getDependencyEntityParameter($dependencyName)
+        );
+
+        return sprintf('%sLoad%sData',
+            ClassInfo::getNamespace($fixtureFQCN),
+            ClassInfo::getClassName($entityFQCN)
+        );
     }
 
     /**
@@ -327,9 +542,48 @@ class FixtureMetadata implements FixtureMetadataInterface
     /**
      * @return null|string
      */
-    public function getServiceKey()
+    public function getEntityParameter()
     {
-        return $this->tree->get('service', 'entityPath');
+        return $this->tree->get('service', 'entity_class');
+    }
+
+    /**
+     * @return string
+     */
+    public function getEntityFQCN()
+    {
+        return $this->getParameter($this->getEntityParameter());
+    }
+
+    /**
+     * @return Entity
+     */
+    public function getEntityInstance()
+    {
+        $fQCN = $this->getEntityFQCN();
+
+        return new $fQCN;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRepositoryParameter()
+    {
+        return $this->tree->get('service', 'repo_service');
+    }
+
+    /**
+     * @return string
+     */
+    public function getRepositoryFQCN()
+    {
+        return get_class($this->getRepositoryInstance());
+    }
+
+    public function getRepositoryInstance()
+    {
+        return $this->getService($this->getRepositoryParameter());
     }
 
     /**
@@ -337,29 +591,44 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function hasReferenceByIndexEnabled()
     {
-        return (bool) ($this->tree->get('references', 'identFromFixture'));
+        return (bool) ($this->tree->get('references', 'identity_from_me'));
     }
 
     /**
      * @return bool
      */
-    public function hasReferenceByColumnsEnabled()
+    public function hasColumnReferences()
     {
-        return (bool) ($this->tree->get('references', 'buildFromColumns'));
+        return (bool) (
+            null !== $this->getColumnReferences() ||
+            true !== (count($this->getColumnReferences()) === 0)
+        );
     }
 
     /**
+     * @return string[]|null
+     */
+    public function getColumnReferences()
+    {
+        return $this->tree->get('references', 'create_from_cols');
+    }
+
+    /**
+     * @param \Closure|null $cannonicalize
+     *
      * @return array
      */
-    public function getReferenceByColumnsSets()
+    public function getColumnReferenceCollections(\Closure $cannonicalize = null)
     {
-        $prepareColumnSets = function (&$set) { $set = (array) $set; };
+        $cannonicalize = $cannonicalize instanceof \Closure ? $cannonicalize : function (&$set) {
+            $set = (array) $set;
+        };
 
-        if (null !== ($columnSets = $this->tree->get('references', 'buildFromColumns'))) {
-            array_walk($columnSets, $prepareColumnSets);
+        if (null !== ($columnCollections = $this->tree->get('references', 'create_from_cols'))) {
+            array_walk($columnCollections, $cannonicalize);
         }
 
-        return (array) $columnSets;
+        return (array) $columnCollections;
     }
 
     /**
@@ -404,6 +673,9 @@ class FixtureMetadata implements FixtureMetadataInterface
         return $matches[1];
     }
 
+    /**
+     * @return string
+     */
     protected function resolveFileNameTemplate()
     {
         return (string) ($this->nameTemplate ?: '%name%Data.%type%');
@@ -430,7 +702,7 @@ class FixtureMetadata implements FixtureMetadataInterface
     {
         $location = $this->locator->locate($this->fileName);
 
-        return (string) array_first($location);
+        return (string) getFirstArrayElement($location);
     }
 
     /**

@@ -14,6 +14,7 @@ namespace Scribe\Doctrine\DataFixtures\Metadata;
 use Scribe\Doctrine\DataFixtures\FixtureInterface;
 use Scribe\Doctrine\DataFixtures\Loader\FixtureLoaderResolverInterface;
 use Scribe\Doctrine\DataFixtures\Locator\FixtureLocatorInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Interface FixtureMetadataInterface.
@@ -51,9 +52,11 @@ interface FixtureMetadataInterface
     const MODE_DEFAULT = self::MODE_MERGE;
 
     /**
+     * @param ContainerInterface $container
+     *
      * @return $this
      */
-    public function load();
+    public function load(ContainerInterface $container);
 
     /**
      * @param FixtureInterface $handler
@@ -101,9 +104,26 @@ interface FixtureMetadataInterface
     public function getMode();
 
     /**
-     * @return string[]|
+     * @return string[]
      */
-    public function getVersions();
+    public function getMetaAndDataVersionsValidated();
+
+    /**
+     * @param string[] $for
+     *
+     * @return string[]|string
+     */
+    public function getVersions(...$for);
+
+    /**
+     * @return string|null
+     */
+    public function getMetaVersion();
+
+    /**
+     * @return string|null
+     */
+    public function getDataVersion();
 
     /**
      * @return array
@@ -145,7 +165,7 @@ interface FixtureMetadataInterface
     /**
      * @return null|string
      */
-    public function getServiceKey();
+    public function getEntityParameter();
 
     /**
      * @return bool
@@ -155,12 +175,12 @@ interface FixtureMetadataInterface
     /**
      * @return bool
      */
-    public function hasReferenceByColumnsEnabled();
+    public function hasColumnReferences();
 
     /**
      * @return array
      */
-    public function getReferenceByColumnsSets();
+    public function getColumnReferenceCollections();
 }
 
 /* EOF */
