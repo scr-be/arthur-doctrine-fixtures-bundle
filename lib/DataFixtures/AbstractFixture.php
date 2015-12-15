@@ -763,8 +763,6 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             $entitySearched = $repository->findOneBy($identity);
 
             $this->manager->initializeObject($entitySearched);
-            $this->manager->merge($entity);
-            $this->manager->refresh($entitySearched);
 
             if ($entitySearched && !$entity->isEqualTo($entitySearched)) {
                 $mapper = new HydratorManager(new HydratorMapping(true));
