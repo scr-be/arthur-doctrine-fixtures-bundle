@@ -74,7 +74,7 @@ class FixtureLocator implements FixtureLocatorInterface
             return (bool) (realpath($p.DIRECTORY_SEPARATOR.($file ?: '')));
         })->getPaths();
 
-        for ($i = 0; $i < count($filtered); $i++) {
+        for ($i = 0; $i < count($filtered); ++$i) {
             $filtered[$i] = realpath($filtered[$i].DIRECTORY_SEPARATOR.$file);
         }
 

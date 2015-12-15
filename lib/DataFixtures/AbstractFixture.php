@@ -15,8 +15,6 @@ use Doctrine\Common\DataFixtures\AbstractFixture as BaseAbstractFixture;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Persistence\ObjectManager;
 use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\EntityRepository;
-use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Scribe\Doctrine\DataFixtures\Exception\StrategyException;
 use Scribe\Doctrine\DataFixtures\Loader\YamlFixtureLoader;
 use Scribe\Doctrine\DataFixtures\Loader\FixtureLoaderResolver;
@@ -217,7 +215,6 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             $this->metadata = $metadata;
 
             $this->removeRegisteredAssociationsPurgedLog();
-
         } catch (\Exception $exception) {
             throw new RuntimeException('Unable to generate metadata for fixture (ORM Loader: %s)', null, $exception, get_class($this));
         }
@@ -238,12 +235,14 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         if ($this->skip === true) {
             OutBuffer::stat('+y/i-runmode +y/b-[ended]+w/- previous error set mode to skip');
             echo PHP_EOL;
+
             return;
         }
 
         if ($this->metadata->isEmpty()) {
             OutBuffer::stat('+y/i-runmode +y/b-[ended]+w/- empty data set provided by fixture');
             echo PHP_EOL;
+
             return;
         }
 
@@ -263,7 +262,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             OutBuffer::stat('+g/i-depends+g/b- [order]+w/- ordered by priority=[ +w/i-'.$this->getOrder().' +w/-]');
         }
 
-        foreach(['prefer', 'fallback', 'failure'] as $attemptType) {
+        foreach (['prefer', 'fallback', 'failure'] as $attemptType) {
             try {
                 list($persistMode, $cleanupMode) = $this->resolveRuntimeMode($attemptType);
                 $this->performLoad($attemptType, $persistMode, $cleanupMode);
@@ -358,7 +357,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             ->getRepository($this->getEntityFQCN())
             ->findAll();
 
-        $toRemove = array_values(array_filter($entities, function(Entity $entity) use ($identities) {
+        $toRemove = array_values(array_filter($entities, function (Entity $entity) use ($identities) {
             return (bool) (!in_array($entity->getIdentity(), $identities));
         }));
 
@@ -416,7 +415,6 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
                 throw new LogicException('Metadata version is not compatible with fixture-defined version.');
             }
         } catch (LogicException $exception) {
-
             OutBuffer::stat('+y/i-version+y/b- [check]+w/- metadata version required=[+w/i- %s +w/-] declared=[+w/i- %s +w/-]', $this->metadata->getMetaVersionRequired(), $yaml);
             OutBuffer::stat('+y/i-version+y/b- [check]+w/- object data version required=[+w/i- %s +w/-] declared=[+w/i- %s +w/-]', $this->metadata->getDataVersionRequired(), $data);
 
@@ -439,7 +437,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         $status = '+g/i-runmode+g/b- [start]+w/- using strategy=[ +w/i-%s +w/-] for=[ +w/i-%s +w/-] ';
         $normalized = [];
 
-        foreach($modes as $i => $s) {
+        foreach ($modes as $i => $s) {
             $tmp = [];
             foreach ($s as $type => $mode) {
                 if ($for !== null && $for !== $type) {
@@ -467,10 +465,10 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             }
         }
 
-        $modesForString = function($normalized) use ($modes) {
+        $modesForString = function ($normalized) use ($modes) {
             $r = [];
 
-            for ($i = 0; $i < count($normalized); $i++) {
+            for ($i = 0; $i < count($normalized); ++$i) {
                 if (is_array($normalized[$i])) {
                     $r[] = implode(':', array_values($normalized[$i]));
                 } else {
@@ -485,7 +483,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
 
         OutBuffer::stat($status,
             implode(',', $r),
-            implode(',', (array)array_keys($modes))
+            implode(',', (array) array_keys($modes))
         );
 
         return $normalized;
@@ -494,6 +492,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     /**
      * @param string $for
      * @param string $strategy
+     *
      * @return mixed
      */
     protected function normalizeStrategy($for, $strategy)
@@ -529,7 +528,8 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             $mode = FixtureMetadata::MODE_SKIP;
 
             return false;
-        } catch (LogicException $exception) {//"strategy -> associations -> purge" set to true i
+        } catch (LogicException $exception) {
+            //"strategy -> associations -> purge" set to true i
             OutBuffer::stat('+y/i-runmode +y/b-[purge]+w/- '.$exception->getMessage());
             OutBuffer::stat('+y/i-runmode +y/b-[purge]+w/- list of associations required for purge:', $exception->getMessage());
             foreach ($exception->getAttributes()['a'] as $i => $association) {
@@ -682,7 +682,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             return [
                 $entityMeta,
                 $entityMeta->isIdentifierNatural(),
-                $entityMeta->getSingleIdentifierFieldName()
+                $entityMeta->getSingleIdentifierFieldName(),
             ];
         } catch (\Exception $e) {
             throw new \RuntimeException('Could not get entity metadata/identity information.');
@@ -808,9 +808,9 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     }
 
     /**
-     * @param Entity $entity
-     * @param int|mixed                                 $index
-     * @param array[]                                   $data
+     * @param Entity    $entity
+     * @param int|mixed $index
+     * @param array[]   $data
      *
      * @return $this
      */
@@ -1016,7 +1016,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             'Method "%s::%s" expects "%s" but got "%s" for fixture identity "%s".', null, null,
             get_class($entity), $method,
             (isset($typeClass) ? $typeClass : $typeString),
-            (gettype($data) . (is_object($data) ? sprintf('" type "%s', get_class($data)) : '')),
+            (gettype($data).(is_object($data) ? sprintf('" type "%s', get_class($data)) : '')),
             ($entity->hasIdentity() ? $entity->getIdentity() : spl_object_hash($entity))
         );
     }
@@ -1040,6 +1040,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     /**
      * @param Entity $entity
      * @param string $property
+     *
      * @return \ReflectionProperty
      */
     protected function getEntityReflectionProperty(Entity $entity, $property)
@@ -1052,6 +1053,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     /**
      * @param Entity $entity
      * @param string $method
+     *
      * @return \ReflectionMethod
      */
     protected function getEntityReflectionMethod(Entity $entity, $method)
@@ -1064,6 +1066,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     /**
      * @param Entity $entity
      * @param string $method
+     *
      * @return \ReflectionParameter[]
      */
     protected function getEntityReflectionMethodParameters(Entity $entity, $method)

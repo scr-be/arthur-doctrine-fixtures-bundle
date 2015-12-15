@@ -12,7 +12,6 @@
 namespace Scribe\Doctrine\DataFixtures\Metadata;
 
 use Scribe\Doctrine\ORM\Mapping\Entity;
-use Scribe\Wonka\Exception\LogicException;
 use Scribe\Wonka\Exception\RuntimeException;
 use Scribe\Wonka\Utility\ClassInfo;
 use Scribe\Doctrine\DataFixtures\FixtureInterface;
@@ -224,11 +223,11 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function getMetaAndDataVersionsValidated(\Closure $validateMeta = null, \Closure $validateData = null)
     {
-        $validateMeta = $validateMeta instanceof \Closure ? $validateMeta : function($version) {
+        $validateMeta = $validateMeta instanceof \Closure ? $validateMeta : function ($version) {
             return call_user_func([$this, 'validateVersion'], $version, $this->getMetaVersionRequired());
         };
 
-        $validateData = $validateData instanceof \Closure ? $validateData : function($version) {
+        $validateData = $validateData instanceof \Closure ? $validateData : function ($version) {
             return call_user_func([$this, 'validateVersion'], $version, $this->getDataVersionRequired());
         };
 
@@ -255,7 +254,7 @@ class FixtureMetadata implements FixtureMetadataInterface
             throw new RuntimeException('Version "%s" not defined for "%s".', null, null, $which, $this->getName());
         }, $for);
 
-        return (count($versions) === 1 ? current($versions) : $versions);
+        return count($versions) === 1 ? current($versions) : $versions;
     }
 
     /**
@@ -562,7 +561,7 @@ class FixtureMetadata implements FixtureMetadataInterface
     {
         $fQCN = $this->getEntityFQCN();
 
-        return new $fQCN;
+        return new $fQCN();
     }
 
     /**
