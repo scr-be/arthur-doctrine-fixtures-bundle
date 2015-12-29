@@ -1,0 +1,29 @@
+#!/usr/bin/env php
+<?php
+
+/*
+ * This file is part of the Wonka Bundle.
+ *
+ * (c) Scribe Inc.     <scr@src.run>
+ * (c) Rob Frawley 2nd <rmf@src.run>
+ *
+ * For the full copyright and license information, please view the LICENSE.md
+ * file that was distributed with this source code.
+ */
+
+require_once __DIR__.'/../config/testers/bootstrap/includes/constants.php';
+
+umask(TEST_BS_FILE_CONSOLE_APP_UMASK);
+set_time_limit(TEST_BS_FILE_CONSOLE_APP_EXEC_LIMIT);
+
+require_once TEST_BS_FILE_FUNCTIONS;
+
+testBootstrap__requireFileOnce(
+    TEST_BS_FILE_CONSOLE_APP,
+    testBootstrap__newLogicException(
+        'Could not include the console application at %s.',
+        TEST_BS_FILE_CONSOLE_APP
+    )
+);
+
+/* EOF */
