@@ -1,1 +1,58 @@
-config/testers/fixtures/dot-files/travis.yml
+---
+
+##
+# This file is part of the Arthur Doctrine Fixtures package.
+#
+# (c) Rob Frawley 2nd <rmf@src.run>
+#
+# For the full copyright and license information, view the LICENSE.md
+# file distributed with this source code.
+##
+
+# define project language and let travis know we fully support the new container build env
+language : php
+sudo     : false
+
+# build against zend 5.6.x, zend 7.0.x, hhvm (stable), and hhvm (nightly)
+php :
+  - 5.6
+  - 7.0
+  - hhvm
+  - hhvm-nightly
+
+# use matrix to allow hhvm failures and assign result even if  allowed failures still building
+matrix :
+  fast_finish    : true
+  allow_failures :
+    - php : hhvm
+    - php : hhvm-nightly
+
+# reduce clone depth to speed it up, since we don't need a complete history anyway
+git :
+  depth : 3
+
+# enable memcached and mariadb
+services : memcached
+addons   :
+  mariadb : '10.0'
+
+# global enviornment variables, specifically we enable package builder scripts
+env :
+  global :
+    - build_package=true
+
+# use builder to setup system environment and application requirements
+before_script :
+  - ls -lah ./
+  - bash config/builders/build-reqs/build-reqs.bash up-env
+  - bash config/builders/build-reqs/build-reqs.bash up-app
+
+# run unit tests
+script : bin/phpunit -vvv
+
+# use builder to run post-operations, most importantly handle statistics submissions for text coverage
+after_script :
+  - bash config/builders/build-reqs/build-reqs.bash dn-app
+  - bash config/builders/build-reqs/build-reqs.bash dn-env
+
+...
