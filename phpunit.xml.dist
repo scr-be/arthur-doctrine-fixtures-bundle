@@ -9,7 +9,7 @@
          processIsolation="false"
          stopOnFailure="false"
          syntaxCheck="true"
-         bootstrap="app/config/shared_public/testers/bootstrap/phpunit.php">
+         bootstrap="vendor/autoload.php">
     <testsuites>
         <testsuite name="Arthur Doctrine Fixtures Library">
             <directory>./tests/</directory>
@@ -22,10 +22,7 @@
     </groups>
     <filter>
         <whitelist>
-            <directory>./src</directory>
-            <exclude>
-                <directory>./*/Resources/</directory>
-            </exclude>
+            <directory>./lib</directory>
         </whitelist>
     </filter>
     <logging>
@@ -33,13 +30,6 @@
         <log type="coverage-clover" target="build/logs/clover.xml"/>
     </logging>
     <php>
-        <server name="KERNEL_DIR" value="./tests/app" />
-        <server name="SYMFONY__DATABASE_DRIVER" value="pdo_mysql" />
-        <server name="SYMFONY__DATABASE_HOST" value="127.0.0.1" />
-        <server name="SYMFONY__DATABASE_PORT" value="3306" />
-        <server name="SYMFONY__DATABASE_NAME" value="Scribe_ArthurDoctrineFixturesBundle" />
-        <server name="SYMFONY__DATABASE_USER" value="root" />
-        <server name="SYMFONY__DATABASE_PASSWORD" value="" />
         <ini name="error_reporting" value="-1" />
         <ini name="intl.default_locale" value="en" />
         <ini name="intl.error_level" value="0" />
