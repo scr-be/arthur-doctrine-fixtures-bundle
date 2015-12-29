@@ -53,7 +53,7 @@ class YamlFixtureLoader extends AbstractFixtureLoader
             $decoded = $this->loadUsingSymfonyYaml($contents);
             echo PHP_EOL;
         } catch (\Exception $exception) {
-            throw new RuntimeException('Could not decode YAML for %s.', null, $exception, $resource);
+            throw new RuntimeException('Could not decode YAML.', $exception);
         }
 
         return $decoded;
@@ -66,7 +66,7 @@ class YamlFixtureLoader extends AbstractFixtureLoader
      */
     protected function loadUsingSymfonyYaml($contents)
     {
-        if (false === ($decoded = Yaml::parse($contents, true, true, true))) {
+        if (false === ($decoded = Yaml::parse($contents, true, true))) {
             throw new \RuntimeException('Could not decode YAML using Symfony "Yaml::parse" function.');
         }
 

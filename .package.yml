@@ -11,3 +11,5 @@ php_exts : igbinary
 app_prep : dep-composer
 app_post : ~
 app_path : ~
+pkg_name : arthur-doctrine-fixtures-library
+pkg_desc : "providing advanced YAML-based data-fixture importing, including support for priority- or dependent-based import ordering, configurable per-table merge or purge import strategies, simple inter-fixture references, and more."

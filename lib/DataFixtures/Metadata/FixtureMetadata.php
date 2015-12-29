@@ -428,7 +428,7 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function getDependencies()
     {
-        return (array) array_keys($this->tree->get('depends'));
+        return (array) array_keys((array)$this->tree->get('depends'));
     }
 
     /**
