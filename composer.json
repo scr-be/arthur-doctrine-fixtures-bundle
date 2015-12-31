@@ -1,17 +1,17 @@
 {
-    "name"        : "scr-be/arthur-doctrine-fixtures-library",
+    "name"        : "scr-be/arthur-doctrine-fixtures-bundle",
     "license"     : "MIT",
     "type"        : "library",
-    "homepage"    : "https://scr.be/arthur-doctrine-fixtures-library",
+    "homepage"    : "https://scr.be/arthur-doctrine-fixtures-bundle",
     "description" : "A set of classes, centered around `AbstractFixture` and its children, that allows for a simple implementation of Doctrine ORM fixture loading.",
     "support" : {
         "email"  : "rmf@scr.be",
-        "source" : "https://scr.be/arthur-doctrine-fixtures-library/git",
-        "issues" : "https://scr.be/arthur-doctrine-fixtures-library/issues",
+        "source" : "https://scr.be/arthur-doctrine-fixtures-bundle/git",
+        "issues" : "https://scr.be/arthur-doctrine-fixtures-bundle/issues",
         "irc"    : "irc://irc.efnet.org/scribe"
     },
     "keywords"   : [
-        "arthur-doctrine-fixtures-library", "scribe-arthur-doctrine-fixtures-library", "doctrine", "library", "scr.be", "scribe", "scribenet", "scribe-software", "scribe-systems"
+        "arthur-doctrine-fixtures-bundle", "scribe-arthur-doctrine-fixtures-bundle", "doctrine", "library", "scr.be", "scribe", "scribenet", "scribe-software", "scribe-systems"
     ],
     "authors"    : [
         {
@@ -24,7 +24,7 @@
     "require" : {
         "php"                               : ">=5.6.4,~5.6|~7.0",
         "scr-be/wonka-bundle"               : "~0.3",
-        "scr-be/arthur-doctrine-library"    : "~0.2",
+        "scr-be/arthur-doctrine-library"    : "~0.3",
         "scr-be/augustus-primitive-library" : "~0.2",
         "symfony/dependency-injection"      : "~2.8|~3.0",
         "doctrine/common"                   : "~2.5",
@@ -71,7 +71,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master" : "0.3-dev"
+            "dev-master" : "0.4-dev"
         }
     }
 }

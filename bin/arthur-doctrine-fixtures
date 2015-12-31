@@ -2,7 +2,7 @@
 <?php
 
 /*
- * This file is part of the Wonka Bundle.
+ * This file is part of the Arthur Doctrine Fixture Bundle.
  *
  * (c) Scribe Inc.     <scr@src.run>
  * (c) Rob Frawley 2nd <rmf@src.run>
@@ -11,7 +11,7 @@
  * file that was distributed with this source code.
  */
 
-require_once __DIR__.'/../config/testers/bootstrap/includes/constants.php';
+require_once __DIR__.'/../.config/testers/bootstrap/includes/constants.php';
 
 umask(TEST_BS_FILE_CONSOLE_APP_UMASK);
 set_time_limit(TEST_BS_FILE_CONSOLE_APP_EXEC_LIMIT);

@@ -12,10 +12,10 @@
 #
 
 imports:
-    - { resource: ../../../config/testers/symfony/config/base.yml }
-    - { resource: ../../../config/testers/symfony/config/framework.yml }
-    - { resource: ../../../config/testers/symfony/config/monolog.yml }
-    - { resource: ../../../config/testers/symfony/config/doctrine.yml }
+    - { resource: ../../../.config/testers/symfony/config/base.yml }
+    - { resource: ../../../.config/testers/symfony/config/framework.yml }
+    - { resource: ../../../.config/testers/symfony/config/monolog.yml }
+    - { resource: ../../../.config/testers/symfony/config/doctrine.yml }
 
 scribe_wonka: ~
 
