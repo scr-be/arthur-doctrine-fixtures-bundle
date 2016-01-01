@@ -9,19 +9,19 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures;
 
-use Doctrine\Common\DataFixtures\AbstractFixture as BaseAbstractFixture;
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\DataFixtures\AbstractFixture as BaseAbstractFixture;
 use Doctrine\Common\Persistence\ObjectManager;
 use Doctrine\ORM\EntityManager;
-use Scribe\Doctrine\DataFixtures\Exception\StrategyException;
-use Scribe\Doctrine\DataFixtures\Loader\YamlFixtureLoader;
-use Scribe\Doctrine\DataFixtures\Loader\FixtureLoaderResolver;
-use Scribe\Doctrine\DataFixtures\Locator\FixtureLocator;
-use Scribe\Doctrine\DataFixtures\Metadata\FixtureMetadata;
-use Scribe\Doctrine\DataFixtures\Paths\FixturePaths;
-use Scribe\Doctrine\DataFixtures\Registrar\PurgedEntityRegistrar;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Exception\StrategyException;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Loader\FixtureLoaderResolver;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Locator\FixtureLocator;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Metadata\FixtureMetadata;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePaths;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePathsInterface;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Registrar\PurgedEntityRegistrar;
 use Scribe\Doctrine\Exception\ORMException;
 use Scribe\Doctrine\ORM\Mapping\Entity;
 use Scribe\Wonka\Component\Hydrator\Manager\HydratorManager;
@@ -31,6 +31,7 @@ use Scribe\Wonka\Exception\LogicException;
 use Scribe\Wonka\Exception\RuntimeException;
 use Scribe\Wonka\Utility\Reflection\ClassReflectionAnalyser;
 use Scribe\Wonka\Utility\ClassInfo;
+use Scribe\WonkaBundle\Component\DependencyInjection\Container\ContainerAwareTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -38,10 +39,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInterface
 {
-    /**
-     * @var ContainerInterface
-     */
-    protected $container;
+    use ContainerAwareTrait;
 
     /**
      * @var EntityManager
@@ -91,7 +89,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     /**
      * @var array
      */
-    protected $identities = [];
+    protected $identLog = [];
 
     /**
      * @var int
@@ -114,35 +112,11 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     protected $countSkip = 0;
 
     /**
-     * Array of arrays containing [arts of a filepath to be combined at runtime (cartesian product).
-     *
-     * @var array[]
-     */
-    protected $fixtureSearchPathParts = [
-        ['../', '../../', '../../../'],
-        ['app/config', './'],
-        ['config', 'shared_public', 'shared_proprietary'],
-        ['fixtures'],
-    ];
-
-    /**
      * {@inherit-doc}.
      *
      * @return string
      */
     abstract public function getType();
-
-    /**
-     * {@inherit-doc}.
-     *
-     * @param ContainerInterface $container
-     */
-    public function setContainer(ContainerInterface $container = null)
-    {
-        $this->container = $container;
-
-        $this->loadFixtureMetadata();
-    }
 
     /**
      * {@inherit-doc}.
@@ -157,48 +131,15 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     /**
      * {@inherit-doc}.
      *
-     * @return Paths\FixturePaths
-     */
-    public function getFixtureFileSearchPaths()
-    {
-        return FixturePaths::create()->cartesianProductFromPaths(
-            [$this->container->getParameter('kernel.root_dir')],
-            ...$this->fixtureSearchPathParts
-        );
-    }
-
-    /**
-     * {@inherit-doc}.
-     *
-     * @param array[] ...$paths
-     */
-    public function setFixtureFileSearchPaths(array ...$paths)
-    {
-        $this->fixtureSearchPathParts = $paths ?: [];
-    }
-
-    /**
-     * {@inherit-doc}.
-     *
-     * @return Loader\FixtureLoaderInterface[]
-     */
-    public function getFixtureFileLoaders()
-    {
-        return [new YamlFixtureLoader()];
-    }
-
-    /**
-     * {@inherit-doc}.
-     *
      * @throws RuntimeException
      *
      * @return $this
      */
-    public function loadFixtureMetadata()
+    public function loadFixtureMetadata(FixturePathsInterface $paths)
     {
         try {
             $locator = new FixtureLocator();
-            $locator->setPaths($this->getFixtureFileSearchPaths());
+            $locator->setPaths($paths);
 
             $loader = new FixtureLoaderResolver();
             $loader->assignLoaders($this->getFixtureFileLoaders());
@@ -213,8 +154,6 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
                 ->load($this->container);
 
             $this->metadata = $metadata;
-
-            $this->removeRegisteredAssociationsPurgedLog();
         } catch (\Exception $exception) {
             throw new RuntimeException('Unable to generate metadata for fixture (ORM Loader: %s)', null, $exception, get_class($this));
         }
@@ -350,7 +289,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
 
         $identities = array_map(function ($identity) {
             return current($identity);
-        }, $this->identities);
+        }, $this->identLog);
 
         $entities = $this
             ->manager
@@ -544,6 +483,9 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         return true;
     }
 
+    /**
+     * @param string $entityFQCN
+     */
     protected function performEntityAssociationPurge($entityFQCN)
     {
         $metadata = $this->getClassMetadata($entityFQCN);
@@ -578,17 +520,10 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     }
 
     /**
-     * @return $this
+     * @param $a
+     *
+     * @return bool
      */
-    protected function removeRegisteredAssociationsPurgedLog()
-    {
-        if (file_exists($file = $this->getRegisteredAssociationsPurgedLogFilePath())) {
-            unlink($file);
-        }
-
-        return $this;
-    }
-
     protected function addRegisteredAssociationPurgedToLog($a)
     {
         $logFilePath = $this->getRegisteredAssociationsPurgedLogFilePath();
@@ -746,7 +681,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         try {
             $entityMetadata = $this->getClassMetadata($this->getEntityFQCN());
 
-            $this->identities[] = $identity = $entityMetadata->getIdentifierValues($entity);
+            $this->identLog[] = $identity = $entityMetadata->getIdentifierValues($entity);
 
             if (count($identity) > 0) {
                 $identity = [key($identity) => current($identity)];

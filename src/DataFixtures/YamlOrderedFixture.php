@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures;
 
 use Doctrine\Common\DataFixtures\OrderedFixtureInterface;
 

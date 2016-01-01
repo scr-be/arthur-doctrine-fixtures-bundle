@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures\Paths;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths;
 
 use Hoa\Math\Combinatorics\Combination\CartesianProduct;
 

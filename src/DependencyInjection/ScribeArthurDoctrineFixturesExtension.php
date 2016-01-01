@@ -12,12 +12,12 @@
 
 namespace Scribe\Arthur\DoctrineFixturesBundle\DependencyInjection;
 
-use Scribe\WonkaBundle\Component\DependencyInjection\AbstractExtension;
+use Scribe\WonkaBundle\Component\DependencyInjection\AbstractEnableableExtension;
 
 /**
  * Class ScribeArthurDoctrineFixturesExtension.
  */
-class ScribeArthurDoctrineFixturesExtension extends AbstractExtension
+class ScribeArthurDoctrineFixturesExtension extends AbstractEnableableExtension
 {
 }
 

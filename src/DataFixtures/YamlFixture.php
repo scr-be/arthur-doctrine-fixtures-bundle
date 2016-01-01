@@ -9,9 +9,10 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures;
 
-use Scribe\Doctrine\DataFixtures\Loader\FixtureLoaderInterface;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Loader\FixtureLoaderInterface;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Loader\YamlFixtureLoader;
 
 /**
  * Class YamlFixture.
@@ -24,6 +25,16 @@ class YamlFixture extends AbstractFixture
     public function getType()
     {
         return FixtureLoaderInterface::RESOURCE_YAML;
+    }
+
+    /**
+     * {@inherit-doc}.
+     *
+     * @return Loader\FixtureLoaderInterface[]
+     */
+    public function getFixtureFileLoaders()
+    {
+        return [new YamlFixtureLoader()];
     }
 }
 

@@ -9,9 +9,9 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures\Locator;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Locator;
 
-use Scribe\Doctrine\DataFixtures\Paths\FixturePaths;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePathsInterface;
 
 /**
  * Class DataFixturesLocator.
@@ -19,18 +19,18 @@ use Scribe\Doctrine\DataFixtures\Paths\FixturePaths;
 class FixtureLocator implements FixtureLocatorInterface
 {
     /**
-     * @var FixturePaths
+     * @var FixturePathsInterface
      */
     protected $search;
 
     /**
      * {@inherit-doc}.
      *
-     * @param FixturePaths $search
+     * @param FixturePathsInterface $search
      *
      * @return $this
      */
-    public function setPaths(FixturePaths $search)
+    public function setPaths(FixturePathsInterface $search)
     {
         $this->search = $search;
 
@@ -47,7 +47,7 @@ class FixtureLocator implements FixtureLocatorInterface
      */
     public function locate($file, $single = true)
     {
-        if (true !== ($this->search instanceof FixturePaths)) {
+        if (true !== ($this->search instanceof FixturePathsInterface)) {
             return [];
         }
 
@@ -61,12 +61,12 @@ class FixtureLocator implements FixtureLocatorInterface
     /**
      * {@inherit-doc}.
      *
-     * @param FixturePaths $search
-     * @param null|string  $file
+     * @param null|string           $file
+     * @param FixturePathsInterface $search
      *
-     * @return FixturePaths
+     * @return FixturePathsInterface
      */
-    public function locateValidPaths($file = null, FixturePaths $search = null)
+    public function locateValidPaths($file = null, FixturePathsInterface $search = null)
     {
         $search = $search ?: $this->search;
 

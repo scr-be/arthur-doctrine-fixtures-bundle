@@ -9,9 +9,9 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\Tests\DataFixtures\Locator;
+namespace Scribe\Arthur\DoctrineFixturesBundle\Tests\DataFixtures\Locator;
 
-use Scribe\Doctrine\DataFixtures\Tree\TreeStore;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Tree\TreeStore;
 use Scribe\Wonka\Utility\UnitTest\WonkaTestCase;
 use Symfony\Component\Yaml\Yaml;
 

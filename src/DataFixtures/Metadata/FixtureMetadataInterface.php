@@ -9,11 +9,11 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures\Metadata;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Metadata;
 
-use Scribe\Doctrine\DataFixtures\FixtureInterface;
-use Scribe\Doctrine\DataFixtures\Loader\FixtureLoaderResolverInterface;
-use Scribe\Doctrine\DataFixtures\Locator\FixtureLocatorInterface;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\FixtureInterface;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Loader\FixtureLoaderResolverInterface;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Locator\FixtureLocatorInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**

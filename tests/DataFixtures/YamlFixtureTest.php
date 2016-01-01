@@ -9,12 +9,13 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\Tests\DataFixtures\Locator;
+namespace Scribe\Arthur\DoctrineFixturesBundle\Tests\DataFixtures\Locator;
 
-use Scribe\Doctrine\DataFixtures\Loader\FixtureLoaderInterface;
-use Scribe\Doctrine\DataFixtures\Paths\FixturePaths;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Loader\FixtureLoaderInterface;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePaths;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePathsInterface;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\YamlFixture;
 use Scribe\Wonka\Utility\UnitTest\WonkaTestCase;
-use Scribe\Doctrine\DataFixtures\YamlFixture;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -32,6 +33,11 @@ class YamlFixtureTest extends WonkaTestCase
      */
     protected $c;
 
+    /**
+     * @var FixturePathsInterface
+     */
+    protected $paths;
+
     public function setUp()
     {
         $this->c = $this->getMockBuilder('Symfony\Component\DependencyInjection\Container')
@@ -42,7 +48,7 @@ class YamlFixtureTest extends WonkaTestCase
             ->method('getParameter')
             ->will($this->returnValue('./tests/fixtures/'));
 
-        $this->f = $this->getMockBuilder('Scribe\Doctrine\DataFixtures\YamlFixture')
+        $this->f = $this->getMockBuilder('Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\YamlFixture')
             ->setMethods(['getFixtureFileSearchPaths'])
             ->getMock();
 
@@ -50,10 +56,14 @@ class YamlFixtureTest extends WonkaTestCase
             ->method('getFixtureFileSearchPaths')
             ->will($this->returnValue(FixturePaths::create()->cartesianProductFromPaths(['tests/fixtures'])));
 
-        $reflectionF = new \ReflectionClass('Scribe\Doctrine\DataFixtures\YamlFixture');
+        $reflectionF = new \ReflectionClass('Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\YamlFixture');
         $reflectionContainer = $reflectionF->getProperty('container');
         $reflectionContainer->setAccessible(true);
         $reflectionContainer->setValue($this->f, $this->c);
+
+        $this->paths = $searchPaths = FixturePaths::create()->cartesianProductFromPaths(
+            [$this->c->getParameter('kernel.root_dir')]
+        );
 
         parent::setUp();
     }
@@ -63,12 +73,14 @@ class YamlFixtureTest extends WonkaTestCase
         $this->setExpectedException('Scribe\Wonka\Exception\RuntimeException');
         $this->f->setFixtureFileSearchRegex('\b');
         $this->f->setContainer($this->c);
+        $this->f->loadFixtureMetadata($this->paths);
     }
 
     public function testMatchingFixtureFile()
     {
         $this->f->setFixtureFileSearchRegex('\bMock_([a-zA-Z]{1,})_');
         $this->f->setContainer($this->c);
+        $this->f->loadFixtureMetadata($this->paths);
 
         static::assertEquals(FixtureLoaderInterface::RESOURCE_YAML, $this->f->getType());
     }

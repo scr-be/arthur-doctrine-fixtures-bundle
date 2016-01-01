@@ -9,10 +9,10 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\Tests\DataFixtures\Locator;
+namespace Scribe\Arthur\DoctrineFixturesBundle\Tests\DataFixtures\Locator;
 
-use Scribe\Doctrine\DataFixtures\Locator\FixtureLocator;
-use Scribe\Doctrine\DataFixtures\Paths\FixturePaths;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Locator\FixtureLocator;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePaths;
 use Scribe\Wonka\Utility\UnitTest\WonkaTestCase;
 
 /**
@@ -45,14 +45,14 @@ class FixturesLocatorTest extends WonkaTestCase
         $input = [
             'bad/bad/path',
             'bin',
-            'lib',
+            'src',
             'invalid-path',
             'tests/DataFixtures/Locator',
         ];
 
         $expected = [
             'bin',
-            'lib',
+            'src',
             'tests/DataFixtures/Locator',
         ];
 

@@ -46,7 +46,8 @@
         "satooshi/php-coveralls" : "~1.0"
     },
     "conflict" : {
-        "scribe/mantle-bundle" : "<2.3.0"
+        "scribe/mantle-bundle"                    : "<2.3.0",
+        "scr-be/arthur-doctrine-fixtures-library" : "*"
     },
     "autoload" : {
         "psr-4" : {

@@ -9,15 +9,15 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures\Metadata;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Metadata;
 
 use Scribe\Doctrine\ORM\Mapping\Entity;
 use Scribe\Wonka\Exception\RuntimeException;
 use Scribe\Wonka\Utility\ClassInfo;
-use Scribe\Doctrine\DataFixtures\FixtureInterface;
-use Scribe\Doctrine\DataFixtures\Loader\FixtureLoaderResolverInterface;
-use Scribe\Doctrine\DataFixtures\Locator\FixtureLocatorInterface;
-use Scribe\Doctrine\DataFixtures\Tree\TreeStore;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\FixtureInterface;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Loader\FixtureLoaderResolverInterface;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Locator\FixtureLocatorInterface;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Tree\TreeStore;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**

@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures\Exception;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Exception;
 
 use Scribe\Wonka\Exception\RuntimeException;
 

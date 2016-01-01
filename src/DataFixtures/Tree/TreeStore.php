@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures\Tree;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Tree;
 
 /**
  * Class TreeStore.

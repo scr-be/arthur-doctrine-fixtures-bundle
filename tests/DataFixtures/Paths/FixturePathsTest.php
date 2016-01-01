@@ -9,9 +9,9 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\Tests\DataFixtures\Locator;
+namespace Scribe\Arthur\DoctrineFixturesBundle\Tests\DataFixtures\Locator;
 
-use Scribe\Doctrine\DataFixtures\Paths\FixturePaths;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePaths;
 use Scribe\Wonka\Utility\UnitTest\WonkaTestCase;
 
 /**

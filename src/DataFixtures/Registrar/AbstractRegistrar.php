@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures\Registrar;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Registrar;
 
 use Doctrine\Common\Collections\ArrayCollection;
 

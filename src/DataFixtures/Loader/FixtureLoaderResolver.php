@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures\Loader;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Loader;
 
 use Symfony\Component\Config\Loader\LoaderResolver;
 
@@ -19,7 +19,7 @@ use Symfony\Component\Config\Loader\LoaderResolver;
 class FixtureLoaderResolver extends LoaderResolver implements FixtureLoaderResolverInterface
 {
     /**
-     * @param \Scribe\Doctrine\DataFixtures\Loader\FixtureLoaderInterface[] $loaders
+     * @param \Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Loader\FixtureLoaderInterface[] $loaders
      *
      * @return $this
      */

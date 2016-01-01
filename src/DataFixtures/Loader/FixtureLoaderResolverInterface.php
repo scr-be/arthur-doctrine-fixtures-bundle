@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures\Loader;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Loader;
 
 use Symfony\Component\Config\Loader\LoaderResolverInterface;
 

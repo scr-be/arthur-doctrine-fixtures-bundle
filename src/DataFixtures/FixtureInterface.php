@@ -9,16 +9,18 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures;
 
 use Doctrine\Common\Persistence\ObjectManager;
+use Doctrine\Common\DataFixtures\FixtureInterface as BaseFixtureInterface;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePathsInterface;
 use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Interface FixtureInterface.
  */
-interface FixtureInterface extends ContainerAwareInterface
+interface FixtureInterface extends ContainerAwareInterface, BaseFixtureInterface
 {
     /**
      * @return string
@@ -26,24 +28,9 @@ interface FixtureInterface extends ContainerAwareInterface
     public function getType();
 
     /**
-     * @param ContainerInterface $container
-     */
-    public function setContainer(ContainerInterface $container = null);
-
-    /**
      * @param string $regex
      */
     public function setFixtureFileSearchRegex($regex);
-
-    /**
-     * @return Paths\FixturePaths
-     */
-    public function getFixtureFileSearchPaths();
-
-    /**
-     * @param array[] ...$paths
-     */
-    public function setFixtureFileSearchPaths(array ...$paths);
 
     /**
      * @return Loader\FixtureLoaderInterface[]
@@ -53,9 +40,11 @@ interface FixtureInterface extends ContainerAwareInterface
     /**
      * Attempt to find a matching fixture file for the calling class and parse the file.
      *
+     * @param FixturePathsInterface $paths
+     *
      * @return $this
      */
-    public function loadFixtureMetadata();
+    public function loadFixtureMetadata(FixturePathsInterface $paths);
 
     /**
      * @param ObjectManager $manager

@@ -9,9 +9,9 @@
  * file that was distributed with this source code.
  */
 
-namespace Scribe\Doctrine\DataFixtures\Locator;
+namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Locator;
 
-use Scribe\Doctrine\DataFixtures\Paths\FixturePaths;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePathsInterface;
 
 /**
  * Interface FixtureLocatorInterface.
@@ -21,11 +21,11 @@ interface FixtureLocatorInterface
     /**
      * Provide the fixture paths object instance.
      *
-     * @param FixturePaths $search
+     * @param FixturePathsInterface $search
      *
      * @return $this
      */
-    public function setPaths(FixturePaths $search);
+    public function setPaths(FixturePathsInterface $search);
 
     /**
      * Locate valid file paths out of provides paths/file names.
@@ -40,12 +40,12 @@ interface FixtureLocatorInterface
     /**
      * Filter invalid paths out of provides paths.
      *
-     * @param FixturePaths $search
-     * @param null|string  $file
+     * @param null|string           $file
+     * @param FixturePathsInterface $search
      *
      * @return FixturePaths
      */
-    public function locateValidPaths($file = null, FixturePaths $search = null);
+    public function locateValidPaths($file = null, FixturePathsInterface $search = null);
 }
 
 /* EOF */

@@ -22,6 +22,7 @@ use Doctrine\Common\DataFixtures\Executor\ORMExecutor;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
 use Doctrine\DBAL\Sharding\PoolingShardConnection;
 use Doctrine\ORM\EntityManager;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Registry\FixtureRegistry;
 use Scribe\Wonka\Exception\InvalidArgumentException;
 use Symfony\Bridge\Doctrine\DataFixtures\ContainerAwareLoader as DataFixturesLoader;
 use Symfony\Bridge\Doctrine\RegistryInterface;
@@ -32,6 +33,7 @@ use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\HttpKernel\Bundle\Bundle;
 
 /**
  * Load data fixtures from bundles.
@@ -103,31 +105,32 @@ EOT
     {
         $io = new SymfonyStyle($input, $output);
 
-        $fixturePaths = $input->getArgument('fixtures');
-
-        if ($fixturePaths) {
-            $paths = (array) $fixturePaths;
-        } else {
-            $paths = array_map(function($bundle) {
-                return $bundle->getPath() . '/DataFixtures/ORM';
-            }, $this->getApplication()->getKernel()->getBundles());
+        if (!($searchPaths = $input->getArgument('fixtures'))) {
+            $searchPaths = $this->getSearchPaths();
         }
 
-        $loader = new DataFixturesLoader($this->getContainer());
+        if (count($searchPaths) === 0) {
+            $io->error('No search paths could be determinened.');
 
-        array_map(function($path) use ($loader) {
-            if (is_dir($path)) {
-                $loader->loadFromDirectory($path);
-            } elseif (is_file($path)) {
-                $loader->loadFromFile($path);
-            }
-        }, $paths);
+            return;
+        }
 
-        $fixtures = $loader->getFixtures();
+        $io->section('Determening ORM paths');
+        $io->listing($searchPaths);
+
+        $io->section('Registering fixtures');
+
+        $registry = new FixtureRegistry($this->getContainer());
+
+        foreach ($searchPaths as $path) {
+            $registry->loadFromPath($path);
+        }
+
+        $fixtures = $registry->getFixtures();
 
         if (!$fixtures) {
-            $io->warning('Unable to find any fixtures within the following search paths.');
-            $io->listing($paths);
+            $io->error('Unable to find any fixtures within the following search paths.');
+            $io->listing($searchPaths);
 
             return;
         }
@@ -137,14 +140,18 @@ EOT
         }
 
         $purger = new ORMPurger($this->em);
-        $purger->setPurgeMode($input->getOption('purge-with-truncate') ? ORMPurger::PURGE_MODE_TRUNCATE : ORMPurger::PURGE_MODE_DELETE);
-        
+        $purger->setPurgeMode(ORMPurger::PURGE_MODE_TRUNCATE);
+
         $executor = new ORMExecutor($this->em, $purger);
         $executor->setLogger(function ($message) use ($output) {
             $output->writeln(sprintf('  <comment>></comment> <info>%s</info>', $message));
         });
-        $executor->execute($fixtures, $input->getOption('append'),$input->getOption('multiple-transactions'));
 
+        $io->section('Importing fixtures');
+
+        $executor->execute($fixtures, true);
+
+        $io->success('Complete!');
         /*
         if ($input->isInteractive() && !$input->getOption('append')) {
             if (!$this->askConfirmation($input, $output, '<question>Careful, database will be purged. Do you want to continue y/N ?</question>', false)) {
@@ -152,6 +159,41 @@ EOT
             }
         }
         */
+    }
+
+    /**
+     * @return string[]
+     */
+    protected function getSearchPaths()
+    {
+        $pathPostfix = $this
+            ->getContainer()
+            ->getParameter('s.arthur_doctrine_fixtures.fixture_search_path_postfix');
+
+        $bundleWhiteList = $this
+            ->getContainer()
+            ->getParameter('s.arthur_doctrine_fixtures.bundles_enabled');
+
+        $bundles = $this
+            ->getContainer()
+            ->get('kernel')
+            ->getBundles();
+
+        if (count($bundleWhiteList) > 0) {
+            $bundles = array_filter($bundles, function (Bundle $b) use ($bundleWhiteList) {
+                return in_array($b->getName(), $bundleWhiteList);
+            });
+        }
+
+        $paths = array_map(function (Bundle $bundle) use ($pathPostfix) {
+            return $bundle->getPath() . $pathPostfix;
+        }, $bundles);
+
+        $paths = array_filter($paths, function ($path) {
+            return (bool) realpath($path);
+        });
+
+        return array_values($paths);
     }
 }
 
