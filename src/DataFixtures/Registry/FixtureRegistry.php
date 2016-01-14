@@ -14,7 +14,6 @@ namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Registry;
 use Doctrine\Common\DataFixtures\Loader;
 use Doctrine\Common\DataFixtures\FixtureInterface as BaseFixtureInterface;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\FixtureInterface;
-use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Locator\FixtureLocator;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePaths;
 use Scribe\Wonka\Exception\RuntimeException;
 use Scribe\WonkaBundle\Component\DependencyInjection\Container\ContainerAwareInterface;

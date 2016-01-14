@@ -19,7 +19,6 @@ use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Exception\StrategyExceptio
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Loader\FixtureLoaderResolver;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Locator\FixtureLocator;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Metadata\FixtureMetadata;
-use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePaths;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePathsInterface;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Registrar\PurgedEntityRegistrar;
 use Scribe\Doctrine\Exception\ORMException;

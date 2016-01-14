@@ -57,12 +57,6 @@ env :
   global :
     - build_package=true
 
-# Testing - @todo: remove
-before_install :
-  - ls -lah ./
-  - ls -lah ./*
-  - ls -lah ./.config/
-
 # Use builder to install system environment and application 
 # requirements.
 install :
