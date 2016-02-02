@@ -49,7 +49,7 @@ class Configuration extends AbstractConfiguration
             ->info('Collection of paths used to build search for fixtures.')
             ->defaultValue([
                 ['../', '../../', '../../../'],
-                ['.config/'],
+                ['.config/', '.config-internal'],
                 ['fixtures/'],
             ])
             ->prototype('array')
