@@ -21,6 +21,7 @@ use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Locator\FixtureLocator;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Metadata\FixtureMetadata;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePathsInterface;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Registrar\PurgedEntityRegistrar;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Syntax\ReferenceResolverInterface;
 use Scribe\Doctrine\Exception\ORMException;
 use Scribe\Doctrine\ORM\Mapping\Entity;
 use Scribe\Wonka\Component\Hydrator\Manager\HydratorManager;
@@ -51,6 +52,13 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
      * @var FixtureMetadata
      */
     protected $metadata;
+
+    /**
+     * Resolves inter-fixture references.
+     *
+     * @var ReferenceResolverInterface
+     */
+    protected $referenceResolver;
 
     /**
      * Number of items to batch when flushing Doctrine.
@@ -161,6 +169,18 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     }
 
     /**
+     * @param ObjectManager              $objectManager
+     * @param ReferenceResolverInterface $referenceResolver
+     */
+    public function loadFixtureData(ObjectManager $objectManager, ReferenceResolverInterface $referenceResolver)
+    {
+        $this->referenceResolver = $referenceResolver;
+        $this->load($objectManager);
+    }
+
+    /**
+     * @internal
+     *
      * @param ObjectManager $manager
      */
     public function load(ObjectManager $manager)

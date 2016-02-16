@@ -14,6 +14,7 @@ namespace Scribe\Arthur\DoctrineFixturesBundle\DataFixtures;
 use Doctrine\Common\Persistence\ObjectManager;
 use Doctrine\Common\DataFixtures\FixtureInterface as BaseFixtureInterface;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePathsInterface;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Syntax\ReferenceResolverInterface;
 use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -47,6 +48,14 @@ interface FixtureInterface extends ContainerAwareInterface, BaseFixtureInterface
     public function loadFixtureMetadata(FixturePathsInterface $paths);
 
     /**
+     * @param ObjectManager              $objectManager
+     * @param ReferenceResolverInterface $referenceResolver
+     */
+    public function loadFixtureData(ObjectManager $objectManager, ReferenceResolverInterface $referenceResolver);
+
+    /**
+     * @internal
+     *
      * @param ObjectManager $manager
      */
     public function load(ObjectManager $manager);

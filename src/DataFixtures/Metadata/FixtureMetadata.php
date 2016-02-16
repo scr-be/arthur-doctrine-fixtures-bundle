@@ -195,6 +195,7 @@ class FixtureMetadata implements FixtureMetadataInterface
      */
     public function getService($key)
     {
+        var_dump($key);
         if ($this->container->has($key)) {
             return $this->container->get($key);
         }

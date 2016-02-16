@@ -26,28 +26,25 @@
         "scr-be/wonka-bundle"               : "~0.3",
         "scr-be/arthur-doctrine-library"    : "~0.3",
         "scr-be/augustus-primitive-library" : "~0.2",
-        "symfony/dependency-injection"      : "~2.8|~3.0",
-        "doctrine/common"                   : "~2.5",
-        "doctrine/data-fixtures"            : "~1.1",
-        "doctrine/doctrine-bundle"          : "~1.6",
         "doctrine/doctrine-fixtures-bundle" : "~2.3",
+        "symfony/yaml"                      : "~2.8|~3.0",
+        "symfony/config"                    : "~2.8|~3.0",
+        "symfony/filesystem"                : "~2.8|~3.0",
+        "symfony/dependency-injection"      : "~2.8|~3.0",
+        "symfony/expression-language"       : "~2.8|~3.0",
+        "symfony/monolog-bundle"            : "~2.8|~3.0",
+        "symfony/polyfill-php70"            : "~1.0",
         "hoa/math"                          : "~0.1"
     },
     "require-dev" : {
-        "symfony/config"         : "~2.8|~3.0",
-        "symfony/yaml"           : "~2.8|~3.0",
-        "symfony/finder"         : "~2.8|~3.0",
-        "symfony/monolog-bundle" : "~2.8|~3.0",
-        "symfony/monolog-bridge" : "~2.8|~3.0",
         "symfony/debug-bundle"   : "~2.8|~3.0",
-        "doctrine/orm"           : "~2.5",
         "phpunit/phpunit"        : "~5.0",
         "codacy/coverage"        : "~1.0",
         "satooshi/php-coveralls" : "~1.0"
     },
     "conflict" : {
         "scribe/mantle-bundle"                    : "<2.3.0",
-        "scr-be/arthur-doctrine-fixtures-library" : "*"
+        "scr-be/arthur-doctrine-fixtures-library" : "<5.0"
     },
     "autoload" : {
         "psr-4" : {
@@ -62,17 +59,11 @@
     "minimum-stability" : "dev",
     "prefer-stable"     : true,
     "config": {
-        "process-timeout"        : 120,
-        "bin-dir"                : "bin",
-        "cache-files-ttl"        : 60,
-        "classmap-authoritative" : true,
-        "github-expose-hostname" : false,
-        "notify-on-install"      : false,
-        "discard-changes"        : "stash"
+        "bin-dir" : "bin"
     },
     "extra": {
         "branch-alias": {
-            "dev-master" : "0.4-dev"
+            "dev-master" : "0.5-dev"
         }
     }
 }
