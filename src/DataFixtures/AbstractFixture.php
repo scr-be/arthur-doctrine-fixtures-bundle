@@ -21,6 +21,7 @@ use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Locator\FixtureLocator;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Metadata\FixtureMetadata;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Paths\FixturePathsInterface;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Registrar\PurgedEntityRegistrar;
+use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Syntax\ReferenceResolver;
 use Scribe\Arthur\DoctrineFixturesBundle\DataFixtures\Syntax\ReferenceResolverInterface;
 use Scribe\Doctrine\Exception\ORMException;
 use Scribe\Doctrine\ORM\Mapping\Entity;
@@ -1050,6 +1051,22 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
      */
     protected function resolveFixtureDataValue($value)
     {
+        $resolver = new ReferenceResolver();
+
+        if (null === ($type = $resolver->typeOf($value)) || null === ($resolution = $resolver->resolve($value, $type))) {
+            return $value;
+        }
+
+        switch($type) {
+            case ReferenceResolver::REF_TINT_SARR:
+                return $this->getHydrationValueUsingInternalRefLookup($resolution['name'], $resolution['args']);
+
+            case ReferenceResolver::REF_TSQL_SARR:
+                throw new LogicException('Not implemented: '.ReferenceResolver::REF_TSQL_SARR);
+        }
+
+        return $value;
+
         if (substr($value, 0, 2) === '++') {
             $value = $this->getHydrationValueUsingInternalRefLookup(substr($value, 2)) ?: $value;
         } elseif (substr($value, 0, 1) === '+' && 1 === preg_match('{^\+([a-z]+:[0-9]+)$}i', $value, $matches)) {
@@ -1062,13 +1079,14 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     }
 
     /**
-     * @param string $reference
+     * @param string   $type
+     * @param string[] $distinct
      *
      * @return mixed|null
      */
-    protected function getHydrationValueUsingInternalRefLookup($reference)
+    protected function getHydrationValueUsingInternalRefLookup($type, array $distinct)
     {
-        return $this->getReference($reference);
+        return $this->getReference($type.':'.implode(':', $distinct));
     }
 
     /**
