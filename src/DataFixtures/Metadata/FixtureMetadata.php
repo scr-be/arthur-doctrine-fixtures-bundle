@@ -252,7 +252,7 @@ class FixtureMetadata implements FixtureMetadataInterface
                 return $v;
             }
 
-            throw new RuntimeException('Version "%s" not defined for "%s".', null, null, $which, $this->getName());
+            throw new RuntimeException('Version "%s" not defined for "%s".', $which, $this->getName());
         }, $for);
 
         return count($versions) === 1 ? current($versions) : $versions;
@@ -328,7 +328,7 @@ class FixtureMetadata implements FixtureMetadataInterface
             return constant($entityFQCN.'::VERSION');
         }
 
-        throw new RuntimeException('No data version set in entity at "%s::%s".', null, null, $entityFQCN, 'VERSION');
+        throw new RuntimeException('No data version set in entity at "%s::%s".', $entityFQCN, 'VERSION');
     }
 
     public function isAssociationPurgeAllowed()
@@ -452,7 +452,7 @@ class FixtureMetadata implements FixtureMetadataInterface
         $dependency = $this->getDependency($name);
 
         if (!isset($dependency['entity_class'])) {
-            throw new RuntimeException('No entity class container parameter set for %s in %s.', null, null, $this->getName(), $name);
+            throw new RuntimeException('No entity class container parameter set for %s in %s.', $this->getName(), $name);
         }
 
         return $dependency['entity_class'];
@@ -667,7 +667,7 @@ class FixtureMetadata implements FixtureMetadataInterface
     protected function resolveName()
     {
         if (1 !== preg_match('{'.$this->nameRegex.'}', $this->className, $matches)) {
-            throw new RuntimeException('Unable to resolve fixture name for %s.', null, null, $this->className);
+            throw new RuntimeException('Unable to resolve fixture name for %s.', $this->className);
         }
 
         return $matches[1];
@@ -711,7 +711,7 @@ class FixtureMetadata implements FixtureMetadataInterface
     protected function resolveContents()
     {
         if (false === ($loader = $this->loader->resolve($this->filePath, $this->type))) {
-            throw new RuntimeException('Unable to resolve appropriate loader for %s:%s.', null, null, $this->filePath, $this->type);
+            throw new RuntimeException('Unable to resolve appropriate loader for %s:%s.', $this->filePath, $this->type);
         }
 
         return $loader->load($this->filePath, $this->type);

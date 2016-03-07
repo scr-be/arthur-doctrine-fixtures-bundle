@@ -163,7 +163,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
 
             $this->metadata = $metadata;
         } catch (\Exception $exception) {
-            throw new RuntimeException('Unable to generate metadata for fixture (ORM Loader: %s)', null, $exception, get_class($this));
+            throw new RuntimeException('Unable to generate metadata for fixture (ORM Loader: %s)', $exception, get_class($this));
         }
 
         return $this;
@@ -195,14 +195,14 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             OutBuffer::stat('+y/i-runmode +y/b-[ended]+w/- previous error set mode to skip');
             echo PHP_EOL;
 
-            return;
+            return null;
         }
 
         if ($this->metadata->isEmpty()) {
             OutBuffer::stat('+y/i-runmode +y/b-[ended]+w/- empty data set provided by fixture');
             echo PHP_EOL;
 
-            return;
+            return null;
         }
 
         $shortDepNameList = function ($fullyQualifiedDependencies) {
@@ -304,7 +304,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         if ($persistMode === FixtureMetadata::MODE_PURGE) {
             OutBuffer::stat('+g/i-removal +g/b-[clean]+w/- skipping cleanup for mode=[+w/i- %s found +w/-]', FixtureMetadata::MODE_PURGE);
 
-            return;
+            return null;
         }
 
         $identities = array_map(function ($identity) {
@@ -323,7 +323,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         OutBuffer::stat('+g/i-removal +g/b-[clean]+w/- remove stale items from orm=[+w/i- %d found +w/-]', count($toRemove));
 
         if (count($toRemove) === 0) {
-            return;
+            return null;
         }
 
         $exceptions = [];
@@ -351,7 +351,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     protected function validateCleanup(array $exceptions)
     {
         if (count($exceptions) === 0) {
-            return;
+            return null;
         }
 
         OutBuffer::stat('+g/i-removal +g/b-[start]+w/- cleaning completed with errors=[+w/i- %d failed +w/-]', count($exceptions));
@@ -511,7 +511,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         $metadata = $this->getClassMetadata($entityFQCN);
 
         if (count($metadata->getAssociationNames()) === 0) {
-            return;
+            return null;
         }
 
         $associationMap = $this->getEntityAssociationMap($entityFQCN);
@@ -806,7 +806,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             return $entity;
         } catch (RuntimeException $exception) {
             throw new RuntimeException(
-                'Could not get hydrated entity "%s" for fixture "%s" item "%s".', null, $exception,
+                'Could not get hydrated entity "%s" for fixture "%s" item "%s".', $exception,
                 get_class($entity), $this->metadata->getName(), (string) $index
             );
         }
@@ -840,7 +840,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         try {
             $this->hydrateEntityDataUsingSetterMethod($entity, $setterMethod, $data);
 
-            return;
+            return null;
         } catch (\Exception $exception) {
             $exceptions[] = $exception;
         }
@@ -848,7 +848,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         try {
             $this->hydrateEntityDataUsingSetterMethod($entity, $setterMethod, $dataCollection);
 
-            return;
+            return null;
         } catch (\Exception $exception) {
             $exceptions[] = $exception;
         }
@@ -856,7 +856,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         try {
             $this->hydrateEntityDataUsingPropertyReflection($entity, $property, $data);
 
-            return;
+            return null;
         } catch (\Exception $exception) {
             $exceptions[] = $exception;
         }
@@ -864,7 +864,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         try {
             $this->hydrateEntityDataUsingPropertyReflection($entity, $property, $dataCollection);
 
-            return;
+            return null;
         } catch (\Exception $exception) {
             $exceptions[] = $exception;
         }
@@ -913,7 +913,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
             return $exception->getMessage();
         }, $exceptions);
 
-        return new RuntimeException('Could not hydrate entities: %s', null, null, (string) implode(' / ', $errors));
+        return new RuntimeException('Could not hydrate entities: %s', (string) implode(' / ', $errors));
     }
 
     /**
@@ -924,13 +924,13 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
     protected function hydrateEntityDataUsingSetterMethod(Entity $entity, $method, $data)
     {
         if (!method_exists($entity, $method)) {
-            throw new RuntimeException('Method "%s::%s" does not exist.', null, null, get_class($entity), $method);
+            throw new RuntimeException('Method "%s::%s" does not exist.', get_class($entity), $method);
         }
 
         $parameters = (array) $this->getEntityReflectionMethodParameters($entity, $method);
 
         if (count($parameters) === 0) {
-            throw new RuntimeException('Method "%s::%s" does not accept any parameters for "%s".', null, null, get_class($entity), $method);
+            throw new RuntimeException('Method "%s::%s" does not accept any parameters for "%s".', get_class($entity), $method);
         }
 
         $firstParameter = current($parameters);
@@ -946,7 +946,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         try {
             $entity->{$method}($data);
         } catch (\Exception $e) {
-            throw new RuntimeException('Could not set data using method "%s::%s"', null, null, get_class($entity), $method);
+            throw new RuntimeException('Could not set data using method "%s::%s"', get_class($entity), $method);
         }
     }
 
@@ -962,7 +962,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         }
 
         if (true === $typeMethod($data)) {
-            return;
+            return null;
         }
 
         throw new RuntimeException(
@@ -986,7 +986,7 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
                 ->getEntityReflectionProperty($entity, $property)
                 ->setValue($entity, $data);
         } catch (\Exception $exception) {
-            throw new RuntimeException('Could not set data using %s::%s.', null, $exception, $property, get_class($entity));
+            throw new RuntimeException('Could not set data using %s::%s.', $exception, $property, get_class($entity));
         }
     }
 
@@ -1106,11 +1106,11 @@ abstract class AbstractFixture extends BaseAbstractFixture implements FixtureInt
         try {
             $result = call_user_func([$repo, $call], $criteria);
         } catch (\Exception $exception) {
-            throw new ORMException('Error searching with call %s(%s) in fixture %s.', null, $exception, $call, $criteria, $this->metadata->getName());
+            throw new ORMException('Error searching with call %s(%s) in fixture %s.', $exception, $call, $criteria, $this->metadata->getName());
         }
 
         if (count($result) > 1) {
-            throw new ORMException('Search with call %s(%s) in fixture %s has >1 result.', null, null, $call, $criteria, $this->metadata->getName());
+            throw new ORMException('Search with call %s(%s) in fixture %s has >1 result.', $call, $criteria, $this->metadata->getName());
         }
 
         if ($result instanceof ArrayCollection) {

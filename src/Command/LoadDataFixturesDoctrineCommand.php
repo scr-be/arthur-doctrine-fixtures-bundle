@@ -112,7 +112,7 @@ EOT
         if (count($searchPaths) === 0) {
             $io->error('No search paths could be determinened.');
 
-            return;
+            return null;
         }
 
         $io->section('Determening ORM paths');
@@ -132,11 +132,11 @@ EOT
             $io->error('Unable to find any fixtures within the following search paths.');
             $io->listing($searchPaths);
 
-            return;
+            return null;
         }
 
         if ($input->isInteractive() && !$io->confirm('Do you want to begin fixture loading', false)) {
-            return;
+            return null;
         }
 
         $purger = new ORMPurger($this->em);
@@ -155,7 +155,7 @@ EOT
         /*
         if ($input->isInteractive() && !$input->getOption('append')) {
             if (!$this->askConfirmation($input, $output, '<question>Careful, database will be purged. Do you want to continue y/N ?</question>', false)) {
-                return;
+                return null;
             }
         }
         */

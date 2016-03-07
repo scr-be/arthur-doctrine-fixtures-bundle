@@ -41,7 +41,7 @@ class FixtureRegistry extends Loader implements ContainerAwareInterface
     public function addFixture(BaseFixtureInterface $fixture)
     {
         if (!($fixture instanceof FixtureInterface) || $this->hasFixture($fixture)) {
-            return;
+            return null;
         }
 
         $fixture->setContainer($this->getContainer());

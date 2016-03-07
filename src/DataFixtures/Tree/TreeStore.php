@@ -88,7 +88,7 @@ class TreeStore implements TreeStoreInterface
         $key = array_shift($keySet);
 
         if (true !== array_key_exists($key, $tree)) {
-            return;
+            return null;
         }
 
         if (false === (count($keySet) > 0)) {
@@ -96,7 +96,7 @@ class TreeStore implements TreeStoreInterface
         }
 
         if (!is_array($tree[$key])) {
-            return;
+            return null;
         }
 
         return $this->resolveDeepSearch($tree[$key], $keySet);
